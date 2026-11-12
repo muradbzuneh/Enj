@@ -4,13 +4,14 @@
  * Adaptive styling for both Default Light (White) mode and Dark mode.
  */
 
-import React, { useState } from 'react';
-import { Mail, Lock, User, ArrowRight, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Mail, Lock, User, AtSign, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Logo } from '../../components/ui/Logo';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { apiClient, ensureApiBaseUrl } from '../../lib/api/client';
 
 export interface SignupPageProps {
   onNavigate: (path: string) => void;
@@ -21,9 +22,50 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
   const { showToast } = useToast();
 
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [usernameStatus, setUsernameStatus] = useState<
+    'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+  >('idle');
+
+  // Live availability check for the handle.
+  useEffect(() => {
+    const handle = username.trim().replace(/^@/, '').toLowerCase();
+
+    if (!handle) {
+      setUsernameStatus('idle');
+      return;
+    }
+    if (!/^[a-z0-9_]{3,30}$/.test(handle)) {
+      setUsernameStatus('invalid');
+      return;
+    }
+
+    let cancelled = false;
+    setUsernameStatus('checking');
+
+    const timer = setTimeout(async () => {
+      try {
+        await ensureApiBaseUrl();
+        const res = await apiClient.get<{ available: boolean }>(
+          '/api/user/username/check',
+          { username: handle },
+        );
+        if (!cancelled) {
+          setUsernameStatus(res?.available ? 'available' : 'taken');
+        }
+      } catch {
+        if (!cancelled) setUsernameStatus('idle');
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [username]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,8 +81,18 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
       return;
     }
 
+    const handle = username.trim().replace(/^@/, '').toLowerCase();
+    if (handle && usernameStatus === 'taken') {
+      setFormError('That username is already taken. Please pick another one.');
+      return;
+    }
+    if (handle && usernameStatus === 'invalid') {
+      setFormError('Usernames may only contain letters, numbers and underscores (3-30 characters).');
+      return;
+    }
+
     try {
-      await signUp(email.trim(), password, name.trim());
+      await signUp(email.trim(), password, name.trim(), handle || undefined);
       showToast('Account created successfully', 'success');
       onNavigate('/');
     } catch (err: any) {
@@ -81,6 +133,28 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
             icon={<User className="w-4 h-4" />}
             required
             autoComplete="name"
+          />
+
+          <Input
+            label="Username"
+            type="text"
+            placeholder="jordanhayes"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            icon={<AtSign className="w-4 h-4" />}
+            autoComplete="username"
+            error={
+              usernameStatus === 'taken'
+                ? 'That username is already taken'
+                : usernameStatus === 'invalid'
+                  ? '3-30 characters, letters, numbers and underscores only'
+                  : undefined
+            }
+            helperText={
+              usernameStatus === 'available'
+                ? `@${username.trim().replace(/^@/, '').toLowerCase()} is available`
+                : undefined
+            }
           />
 
           <Input
