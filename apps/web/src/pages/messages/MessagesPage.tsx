@@ -44,6 +44,31 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ initialConversationI
     if (initialConversationId) setActiveId(initialConversationId);
   }, [initialConversationId]);
 
+  /**
+   * A conversation opened from a profile (Message button) was created moments
+   * ago and is not part of the polled list yet. Fetch it directly so the chat
+   * opens instantly instead of waiting for the next poll.
+   */
+  useEffect(() => {
+    if (!initialConversationId) return;
+    if (conversations.some((c) => c.id === initialConversationId)) return;
+
+    let cancelled = false;
+    api.messages
+      .getConversation(initialConversationId)
+      .then((conversation) => {
+        if (cancelled || !conversation) return;
+        setConversations((prev) =>
+          prev.some((c) => c.id === conversation.id) ? prev : [conversation, ...prev],
+        );
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialConversationId, conversations]);
+
   if (!user) {
     return (
       <div className="bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-10 text-center shadow-xs transition-colors">

@@ -30,6 +30,17 @@ export const messagesService = {
     return res.data || [];
   },
 
+  async getConversation(conversationId: string): Promise<ConversationItem | null> {
+    try {
+      const res = await apiClient.get<{ data: ConversationItem }>(
+        `/api/conversations/${conversationId}`,
+      );
+      return res.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+
   async createConversation(participantId: string): Promise<{ id: string }> {
     const res = await apiClient.post<{ data: { id: string } }>("/api/conversations", { participantId });
     return res.data;

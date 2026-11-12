@@ -1,8 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 
-export async function getConversations(req: Request, res: Response) {
-  try {
+export async function getConversations(req: Request, res: Response) {  try {
     const currentUser = res.locals.session.user;
 
     const participations = await prisma.conversationParticipant.findMany({
@@ -63,6 +62,77 @@ export async function getConversations(req: Request, res: Response) {
   } catch (error) {
     console.error("GET CONVERSATIONS ERROR:", error);
     return res.status(500).json({ status: "error", message: "Unable to fetch conversations" });
+  }
+}
+
+/**
+ * A single conversation.
+ *
+ * Needed when a conversation was just created (Message button on a profile):
+ * it is not part of the cached conversation list yet, and without this the
+ * chat panel would stay empty until the next poll.
+ */
+export async function getConversation(req: Request, res: Response) {
+  try {
+    const currentUser = res.locals.session.user;
+    const conversationId = req.params.id as string;
+
+    const participation = await prisma.conversationParticipant.findFirst({
+      where: { conversationId, userId: currentUser.id },
+      include: {
+        conversation: {
+          include: {
+            participants: {
+              include: {
+                user: { select: { id: true, name: true, username: true, image: true } },
+              },
+            },
+            messages: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              include: { author: { select: { id: true, name: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    if (!participation) {
+      return res.status(404).json({ status: "error", message: "Conversation not found" });
+    }
+
+    const other = participation.conversation.participants.find(
+      (part) => part.userId !== currentUser.id,
+    );
+    const lastMessage = participation.conversation.messages[0] || null;
+
+    const unreadCount = await prisma.message.count({
+      where: {
+        conversationId,
+        read: false,
+        authorId: { not: currentUser.id },
+      },
+    });
+
+    return res.json({
+      status: "success",
+      data: {
+        id: conversationId,
+        otherUser: other?.user || null,
+        lastMessage: lastMessage
+          ? {
+              content: lastMessage.content,
+              createdAt: lastMessage.createdAt.toISOString(),
+              authorName: lastMessage.author.name,
+            }
+          : null,
+        unreadCount,
+        createdAt: participation.conversation.createdAt.toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("GET CONVERSATION ERROR:", error);
+    return res.status(500).json({ status: "error", message: "Unable to fetch conversation" });
   }
 }
 

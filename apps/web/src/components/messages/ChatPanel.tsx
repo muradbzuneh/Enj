@@ -121,12 +121,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ conversationId, otherUser,
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Type a message..."
+          aria-label="Message"
           className="flex-1 text-sm rounded-full border border-slate-200 dark:border-[#2d333b] bg-slate-50 dark:bg-[#121418] px-4 py-2.5 text-slate-900 dark:text-[#f3f4f6] placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#FF3366]/30 focus:border-[#FF3366] transition-all"
           disabled={isSending}
         />
         <button
           type="submit"
           disabled={!inputText.trim() || isSending}
+          aria-label="Send message"
           className="w-10 h-10 rounded-full bg-[#FF3366] text-white flex items-center justify-center hover:bg-[#EE2055] active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer shrink-0"
         >
           <Send className="w-4 h-4" />
