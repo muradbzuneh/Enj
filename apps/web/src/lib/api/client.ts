@@ -5,7 +5,7 @@ import { ApiRequestError, messageForStatus } from "./errors";
  * Configure with VITE_API_URL (see .env.example). Never hardcode a host.
  */
 export const API_BASE_URL: string = (
-  import.meta.env["VITE_API_URL"] ?? "https://enj-311bb18d292c.herokuapp.com"
+  import.meta.env["VITE_API_URL"] ?? "https://enj-fd0ec6a0ffca.herokuapp.com"
 ).replace(/\/$/, "");
 
 type Query = Record<string, string | number | boolean | undefined | null>;
