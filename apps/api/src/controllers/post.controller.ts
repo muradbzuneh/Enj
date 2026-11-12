@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { prisma } from "../lib/prisma.js";
+import { attachFollowState } from "../lib/follow-state.js";
 import { extractAndSaveHashtags, removeHashtags } from "../lib/hashtags.js";
 import {
   feedQuerySchema,
@@ -72,12 +73,27 @@ export async function getPosts(req: Request, res: Response) {
       });
     }
 
-    const { page, limit } = parsed.data;
+    const { page, limit, author } = parsed.data;
 
     const skip = (page - 1) * limit;
 
+    // Resolve the author filter (id or username) into a user id.
+    let authorId: string | undefined;
+    if (author) {
+      const target = await prisma.user.findFirst({
+        where: {
+          OR: [{ id: author }, { username: author.toLowerCase() }],
+        },
+        select: { id: true },
+      });
+      authorId = target?.id;
+    }
+
+    const where = authorId ? { authorId } : {};
+
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
+        where,
         skip,
         take: limit,
 
@@ -111,16 +127,21 @@ export async function getPosts(req: Request, res: Response) {
         },
       }),
 
-      prisma.post.count(),
+      prisma.post.count({
+        where,
+      }),
     ]);
 
-    const data = posts.map((p) => ({
-      ...p,
-      isLiked: currentUser ? (p as any).likes?.length > 0 : false,
-      isBookmarked: currentUser ? (p as any).bookmarks?.length > 0 : false,
-      likes: undefined,
-      bookmarks: undefined,
-    }));
+    const data = await attachFollowState(
+      posts.map((p) => ({
+        ...p,
+        isLiked: currentUser ? (p as any).likes?.length > 0 : false,
+        isBookmarked: currentUser ? (p as any).bookmarks?.length > 0 : false,
+        likes: undefined,
+        bookmarks: undefined,
+      })),
+      currentUser?.id,
+    );
 
     const totalPages = Math.ceil(total / limit);
 

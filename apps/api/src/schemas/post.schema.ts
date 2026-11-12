@@ -35,6 +35,17 @@ export const feedQuerySchema = z.object({
    * "following"-> only posts by the people the user follows (plus their own)
    */
   filter: z.enum(["all", "following"]).default("all"),
+  /**
+   * "all"  -> posts with and without media
+   * "only" -> only posts that have an image or video attached (used by Reels)
+   */
+  media: z.enum(["all", "only"]).default("all"),
+  /**
+   * Restrict the result to a single author. Accepts a user id or a username.
+   * Without it the profile page had to download the whole feed and filter it
+   * in the browser, which silently dropped every post outside the first page.
+   */
+  author: z.string().trim().min(1).optional(),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;

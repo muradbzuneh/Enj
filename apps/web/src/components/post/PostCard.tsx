@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import { Heart, MessageCircle, MoreHorizontal, Trash2, Edit3, Share2, Bookmark } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Dropdown } from '../ui/Dropdown';
+import { FollowButton } from '../profile/FollowButton';
 import { ShareDialog } from './ShareDialog';
 import { VideoPlayer } from './VideoPlayer';
 import { MediaImage } from './MediaImage';
@@ -214,19 +215,32 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
         </div>
 
-        {/* Dropdown actions */}
-        <Dropdown
-          trigger={
-            <button
-              type="button"
-              className="p-1.5 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#22272e] rounded-xl transition-colors cursor-pointer"
-              aria-label="Post options"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-          }
-          items={dropdownItems}
-        />
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Follow / Following next to the author - how a real feed lets you
+              engage with the people whose content you are looking at. */}
+          {!isOwnPost && (
+            <FollowButton
+              userId={post.authorId}
+              initialIsFollowing={post.isFollowingAuthor}
+              size="sm"
+              variant="compact"
+            />
+          )}
+
+          {/* Dropdown actions */}
+          <Dropdown
+            trigger={
+              <button
+                type="button"
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#22272e] rounded-xl transition-colors cursor-pointer"
+                aria-label="Post options"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            }
+            items={dropdownItems}
+          />
+        </div>
       </div>
 
       {/* Post body */}

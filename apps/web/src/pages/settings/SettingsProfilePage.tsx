@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Trash2, AlertCircle, Eye, EyeOff, Sun, Moon } from 'lucide-react';
+import { Camera, Trash2, AlertCircle, Eye, EyeOff, Sun, Moon, Monitor } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Button } from '../../components/ui/Button';
@@ -25,7 +25,7 @@ const MAX_BIO_LENGTH = 160;
 export const SettingsProfilePage: React.FC<SettingsProfilePageProps> = ({ onNavigate }) => {
   const { user, updateCurrentUser, signOut } = useAuth();
   const { showToast } = useToast();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState('');
@@ -285,10 +285,13 @@ export const SettingsProfilePage: React.FC<SettingsProfilePageProps> = ({ onNavi
       {/* Appearance Section */}
       <div className="bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-6 shadow-xs transition-colors">
         <h2 className="text-sm font-bold text-slate-900 dark:text-[#f3f4f6] mb-4">Appearance</h2>
-        <div className="flex items-center justify-between">
+
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#22272e] flex items-center justify-center">
-              {theme === 'dark' ? (
+              {resolvedTheme === 'system' ? (
+                <Monitor className="w-4 h-4 text-slate-600 dark:text-zinc-300" />
+              ) : resolvedTheme === 'dark' ? (
                 <Moon className="w-4 h-4 text-slate-600 dark:text-zinc-300" />
               ) : (
                 <Sun className="w-4 h-4 text-amber-500" />
@@ -296,26 +299,61 @@ export const SettingsProfilePage: React.FC<SettingsProfilePageProps> = ({ onNavi
             </div>
             <div>
               <p className="text-sm font-medium text-slate-900 dark:text-[#f3f4f6]">
-                {theme === 'dark' ? 'Dark mode' : 'Light mode'}
+                {theme === 'system'
+                  ? 'System theme'
+                  : theme === 'dark'
+                    ? 'Dark mode'
+                    : 'Light mode'}
               </p>
               <p className="text-[11px] text-slate-500 dark:text-zinc-500">
-                Switch between light and dark themes
+                {theme === 'system'
+                  ? 'Follows your device setting'
+                  : 'Switch between light and dark themes'}
               </p>
             </div>
           </div>
+
           <button
             type="button"
-            onClick={toggleTheme}
+            onClick={() => setTheme(theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system')}
             className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
-              theme === 'dark' ? 'bg-[#FF3366]' : 'bg-slate-300'
+              resolvedTheme === 'dark' ? 'bg-[#FF3366]' : 'bg-slate-300 dark:bg-[#3a4150]'
             }`}
+            aria-label="Cycle theme"
           >
             <span
               className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-                theme === 'dark' ? 'translate-x-5.5' : 'translate-x-0.5'
+                resolvedTheme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'
               }`}
             />
           </button>
+        </div>
+
+        {/* Explicit three-way picker */}
+        <div className="grid grid-cols-3 gap-2">
+          {([
+            { id: 'light', label: 'Light', icon: Sun },
+            { id: 'dark', label: 'Dark', icon: Moon },
+            { id: 'system', label: 'System', icon: Monitor },
+          ] as const).map((option) => {
+            const Icon = option.icon;
+            const active = theme === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setTheme(option.id)}
+                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition-colors cursor-pointer ${
+                  active
+                    ? 'border-[#FF3366] bg-rose-50 dark:bg-rose-950/30 text-[#FF3366]'
+                    : 'border-slate-200 dark:border-[#2d333b] text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-[#22272e]'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{option.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

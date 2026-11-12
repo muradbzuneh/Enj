@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
+import { attachFollowState } from "../lib/follow-state.js";
 import { feedQuerySchema } from "../schemas/post.schema.js";
 
 /**
@@ -118,13 +119,16 @@ export async function getTrendingPosts(req: Request, res: Response) {
       },
     });
 
-    const data = fullPosts.map((p) => ({
-      ...p,
-      isLiked: currentUser ? (p as any).likes?.length > 0 : false,
-      isBookmarked: currentUser ? (p as any).bookmarks?.length > 0 : false,
-      likes: undefined,
-      bookmarks: undefined,
-    }));
+    const data = await attachFollowState(
+      fullPosts.map((p) => ({
+        ...p,
+        isLiked: currentUser ? (p as any).likes?.length > 0 : false,
+        isBookmarked: currentUser ? (p as any).bookmarks?.length > 0 : false,
+        likes: undefined,
+        bookmarks: undefined,
+      })),
+      currentUser?.id,
+    );
 
     // Preserve the score-based ordering from the raw query
     const postOrder = new Map(posts.map((p, i) => [p.id, i]));

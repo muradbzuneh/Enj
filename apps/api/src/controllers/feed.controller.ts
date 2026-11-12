@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
+import { attachFollowState } from "../lib/follow-state.js";
 import { feedQuerySchema } from "../schemas/post.schema.js";
 
 export async function getPersonalizedFeed(
@@ -18,7 +19,7 @@ export async function getPersonalizedFeed(
       });
     }
 
-    const { page, limit, filter } = parsed.data;
+    const { page, limit, filter, media } = parsed.data;
     const skip = (page - 1) * limit;
 
     /**
@@ -54,11 +55,14 @@ export async function getPersonalizedFeed(
       authorIds = [currentUser.id, ...following.map((f) => f.followingId)];
     }
 
+    const where = {
+      ...(authorIds ? { authorId: { in: authorIds } } : {}),
+      ...(media === "only" ? { mediaUrl: { not: null } } : {}),
+    };
+
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
-        where: authorIds
-          ? { authorId: { in: authorIds } }
-          : {},
+        where,
         orderBy: {
           createdAt: "desc",
         },
@@ -89,19 +93,20 @@ export async function getPersonalizedFeed(
       }),
 
       prisma.post.count({
-        where: authorIds
-          ? { authorId: { in: authorIds } }
-          : {},
+        where,
       }),
     ]);
 
-    const data = posts.map((p) => ({
-      ...p,
-      isLiked: currentUser ? (p as any).likes?.length > 0 : false,
-      isBookmarked: currentUser ? (p as any).bookmarks?.length > 0 : false,
-      likes: undefined,
-      bookmarks: undefined,
-    }));
+    const data = await attachFollowState(
+      posts.map((p) => ({
+        ...p,
+        isLiked: currentUser ? (p as any).likes?.length > 0 : false,
+        isBookmarked: currentUser ? (p as any).bookmarks?.length > 0 : false,
+        likes: undefined,
+        bookmarks: undefined,
+      })),
+      currentUser?.id,
+    );
 
     const totalPages = Math.ceil(total / limit);
 

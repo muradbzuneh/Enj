@@ -9,6 +9,7 @@ import { RefreshCw, AlertCircle, ArrowLeft, Heart, MessageSquare, Flame, Camera 
 import { FollowListModal } from '../../components/profile/FollowListModal';
 import { FollowButton } from '../../components/profile/FollowButton';
 import { PostCard } from '../../components/post/PostCard';
+import { MediaImage } from '../../components/post/MediaImage';
 import { StoryViewerModal } from '../../components/story/StoryViewerModal';
 import { ProfileSkeleton, PostSkeleton } from '../../components/ui/Skeleton';
 import { Button } from '../../components/ui/Button';
@@ -59,14 +60,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       setProfile(p);
 
       const [feedRes, allStories] = await Promise.all([
-        api.posts.getPosts(1, 50),
+        // Ask the API for this author's posts directly - filtering the global
+        // feed in the browser dropped every post outside the first page.
+        api.posts.getPosts({ page: 1, limit: 30, author: cleanUsername }),
         api.stories.getStories(),
       ]);
 
-      const authored = feedRes.posts.filter(
-        (post) => post.authorId === p.id
-      );
-      setUserPosts(authored);
+      setUserPosts(feedRes.posts);
 
       const stories = allStories.filter(
         (s) => s.authorId === p.id
@@ -333,28 +333,58 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </button>
         </div>
 
-        {/* Posts Tab */}
+        {/* Posts Tab - media grid, like every real profile page */}
         {activeTab === 'posts' && (
-          <div className="divide-y divide-slate-100 dark:divide-[#262a32]">
+          <div className="p-4">
             {userPosts.length === 0 ? (
               <div className="p-8 text-center text-slate-500 dark:text-zinc-400">
                 <p className="text-xs">No posts yet.</p>
               </div>
             ) : (
-              userPosts.map((post) => (
-                <div key={post.id} className="p-4">
-                  <PostCard
-                    post={post}
-                    onPostUpdated={handlePostUpdated}
-                    onPostDeleted={handlePostDeleted}
-                    onProfileClick={(u) => {
-                      if (u) onNavigate(`/profile/${u}`);
-                    }}
-                    onCommentClick={onCommentClick}
-                    onEditClick={onEditClick}
-                  />
-                </div>
-              ))
+              <div className="columns-2 sm:columns-3 gap-2">
+                {userPosts.map((post) => (
+                  <button
+                    key={post.id}
+                    type="button"
+                    onClick={() => onCommentClick(post)}
+                    className="group relative mb-2 break-inside-avoid w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-[#22272e] cursor-pointer ring-1 ring-black/5 dark:ring-white/5 text-left"
+                  >
+                    {post.mediaUrl ? (
+                      <MediaImage
+                        src={resolveMediaUrl(post.mediaUrl)}
+                        alt={post.content}
+                        className="w-full h-auto object-cover"
+                      />
+                    ) : (
+                      <div className="w-full bg-gradient-to-br from-[#FF3366] via-[#FF5E7E] to-[#FFAA00] p-3">
+                        <p className="text-white text-[12px] font-semibold leading-snug line-clamp-4">
+                          {post.content}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                      <span className="flex items-center gap-1 rounded-full bg-black/55 backdrop-blur-sm px-2 py-0.5 text-[11px] font-semibold text-white">
+                        <Heart className="w-3 h-3 fill-white" />
+                        {post.likesCount}
+                      </span>
+                      {post.commentsCount > 0 && (
+                        <span className="flex items-center gap-1 rounded-full bg-black/55 backdrop-blur-sm px-2 py-0.5 text-[11px] font-semibold text-white">
+                          <MessageSquare className="w-3 h-3" />
+                          {post.commentsCount}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Caption on hover */}
+                    {post.content && (
+                      <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/85 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p className="text-[11px] text-white/90 line-clamp-2">{post.content}</p>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         )}

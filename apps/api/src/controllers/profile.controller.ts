@@ -291,22 +291,25 @@ export async function getFollowing(req: Request, res: Response) {
 export async function getSuggestions(req: Request, res: Response) {
   try {
     const currentUser = res.locals.session?.user;
-    if (!currentUser) {
-      return res.json({ status: "success", data: [], count: 0 });
-    }
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 10, 1), 20);
 
-    const following = await prisma.follow.findMany({
-      where: { followerId: currentUser.id },
-      select: { followingId: true },
-    });
-    const followingIds = following.map((f) => f.followingId);
+    // Everyone the viewer already follows is not a suggestion.
+    const followingIds = currentUser
+      ? (
+          await prisma.follow.findMany({
+            where: { followerId: currentUser.id },
+            select: { followingId: true },
+          })
+        ).map((f) => f.followingId)
+      : [];
 
+    const excludeIds = currentUser ? [currentUser.id, ...followingIds] : [];
+
+    // Most followed creators first - that is what makes a suggestion useful.
     const users = await prisma.user.findMany({
-      where: {
-        id: { not: currentUser.id, notIn: followingIds },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 5,
+      where: excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {},
+      orderBy: { followers: { _count: "desc" } },
+      take: limit,
       select: {
         id: true,
         name: true,
@@ -317,7 +320,17 @@ export async function getSuggestions(req: Request, res: Response) {
       },
     });
 
-    return res.json({ status: "success", data: users, count: users.length });
+    return res.json({
+      status: "success",
+      count: users.length,
+      data: users.map((u) => ({
+        ...u,
+        followerCount: u._count.followers,
+        followingCount: u._count.following,
+        postCount: u._count.posts,
+        isFollowing: followingIds.includes(u.id),
+      })),
+    });
   } catch (error) {
     console.error("GET SUGGESTIONS ERROR:", error);
     return res.status(500).json({

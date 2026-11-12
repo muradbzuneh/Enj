@@ -82,14 +82,17 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
         </div>
       </div>
 
-      {/* Trending Grid */}
-      <div className="bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-4 shadow-xs transition-colors">
-        <TrendingGrid onPostClick={(post) => onCommentClick(post)} />
-      </div>
-
-      {/* Suggested Users */}
+      {/* Creators to follow - the primary way to discover and engage with people */}
       <div className="bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-4 shadow-xs transition-colors">
         <SuggestedUsersRow onProfileClick={(id) => onNavigate(`/profile/${id}`)} />
+      </div>
+
+      {/* Media-first trending grid */}
+      <div className="bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-4 shadow-xs transition-colors">
+        <TrendingGrid
+          posts={activeFilter === 'trending' ? posts : undefined}
+          onPostClick={(post) => onCommentClick(post)}
+        />
       </div>
 
       {/* Hashtags */}

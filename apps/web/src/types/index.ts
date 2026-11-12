@@ -47,6 +47,8 @@ export interface Post {
   commentsCount: number;
   isLiked?: boolean;
   isBookmarked?: boolean;
+  /** True when the signed-in user already follows the author. */
+  isFollowingAuthor?: boolean;
   mediaUrl?: string | null;
 }
 
@@ -67,6 +69,8 @@ export interface FollowUserItem {
   image?: string | null;
   bio?: string | null;
   isFollowing?: boolean;
+  followerCount?: number;
+  postCount?: number;
 }
 
 export interface Pagination {
