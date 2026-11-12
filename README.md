@@ -22,15 +22,16 @@
 
 ## Highlights
 
-- **Feed** — Personalized "For You" and "Following" tabs with infinite scroll
-- **Reels** — TikTok-style vertical snap-scroll with swipe, keyboard, and double-tap to like
+- **Feed** — Personalized "For You" (everything on the platform) and "Following" (people you follow) tabs with infinite scroll
+- **Reels** — TikTok-style vertical feed with real media only, follow button, sound toggle, swipe/keyboard/double-tap navigation
 - **Stories** — 24-hour ephemeral stories with reactions, view counts, and auto-advance
 - **Messaging** — Real-time direct messaging between users
-- **Explore** — Trending posts, suggested users, and hashtag discovery
+- **Explore** — Media-first trending grid with engagement counters, "Creators to follow", hashtag discovery
+- **Follow & engage** — Follow button next to every author (feed, reels, explore, profile), like, comment, bookmark, share
+- **Profiles** — Media grid of the user's posts, follower/following counts, story highlights
 - **Bookmarks** — Save posts and access them later
 - **Notifications** — Like, comment, and follow alerts
-- **Profiles** — Customizable profiles with avatar, banner, bio, and follower stats
-- **Dark Mode** — Full dark theme with one-click toggle
+- **Dark Mode** — Class-based light/dark/system theme with a header toggle
 - **Responsive** — Works seamlessly on mobile, tablet, and desktop
 
 ---
@@ -155,7 +156,24 @@ heroku addons:create heroku-postgresql:essential-0   # or use Neon/Supabase
 > `BETTER_AUTH_URL` is an `https://` URL - do not override the cookie attributes
 > or every authenticated request will return `401`.
 
-**3. Durable media storage (recommended)**
+### 3. Seed demo content (optional but recommended)
+
+A fresh database looks empty - no media, no creators, nothing to explore. The
+seed script creates a realistic community: creators with handles and avatars,
+posts with real images and videos, a follow graph, likes, comments and stories.
+
+```bash
+cd apps/api
+npm run db:seed
+```
+
+It is idempotent - running it again only adds what is missing.
+
+> **Note:** run it locally against the same `DATABASE_URL` the API uses. The
+> script needs `tsx` (a dev dependency), so it is not part of the Heroku
+> release phase.
+
+**4. Durable media storage (recommended)**
 
 Heroku's filesystem is ephemeral - uploaded images and videos are wiped on
 every dyno restart. The API stores media in an S3 compatible bucket as soon as
@@ -174,7 +192,7 @@ Backblaze B2 and MinIO):
 Without them the API falls back to the local `uploads/` folder, which is fine
 for development but loses media on every restart.
 
-**4. Deploy**
+**5. Deploy**
 
 ```bash
 git push heroku main
