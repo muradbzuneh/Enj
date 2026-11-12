@@ -150,6 +150,11 @@ heroku addons:create heroku-postgresql:essential-0   # or use Neon/Supabase
 | `BETTER_AUTH_URL` | `https://<app>.herokuapp.com` | Must be the public API URL |
 | `FRONTEND_URL` | `http://localhost:3000,https://<frontend>` | Comma separated list of trusted origins |
 
+> **Cross-site cookies:** the frontend and the API are on different sites, so the
+> session cookie is issued as `SameSite=None; Secure`. This is automatic when
+> `BETTER_AUTH_URL` is an `https://` URL - do not override the cookie attributes
+> or every authenticated request will return `401`.
+
 **3. Durable media storage (recommended)**
 
 Heroku's filesystem is ephemeral - uploaded images and videos are wiped on
