@@ -171,12 +171,23 @@ curl https://<app>.herokuapp.com/api/health
 
 1. Import your GitHub repo on [vercel.com](https://vercel.com)
 2. Set the root directory to `apps/web`
-3. Add environment variable:
+3. Add environment variable (**all** environments - Production, Preview, Development):
    ```
    VITE_API_URL = https://<app>.herokuapp.com
    ```
+   > **Important:** Vercel inlines `VITE_API_URL` at build time. If it is left
+   > empty or points at a deleted deployment, the app will call the wrong host.
+   > The client probes `/api/health` on boot and falls back to the known
+   > production API if the configured host does not answer - but you should
+   > still keep the variable correct.
 4. Deploy, then add the Vercel URL to the backend's `FRONTEND_URL` config var
-   so BetterAuth trusts the origin.
+   so BetterAuth trusts the origin:
+   ```bash
+   heroku config:set FRONTEND_URL=http://localhost:3000,https://your-app.vercel.app
+   ```
+
+> **Note:** Vercel deploys the `main` branch. Push your fixes to `main` (or open
+> a PR into `main`) - a fix on another branch will not reach production.
 
 ---
 
