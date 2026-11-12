@@ -63,8 +63,8 @@ export interface RequestOptions extends RequestInit {
 
 class ApiClient {
   private getBaseUrl(): string {
-    // In Vite, read VITE_API_URL or default to http://localhost:4001
-    return import.meta.env.VITE_API_URL || 'http://localhost:4001';
+    // In Vite, read VITE_API_URL or default to the production API
+    return import.meta.env.VITE_API_URL || 'https://enj-fd0ec6a0ffca.herokuapp.com';
   }
 
   private isMockFallbackEnabled(): boolean {

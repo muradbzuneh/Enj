@@ -1,33 +1,28 @@
 {
-  "name": "enj-api-heroku",
+  "name": "enj",
   "version": "1.0.0",
   "type": "module",
-  "main": "apps/api/dist/server.js",
+  "private": true,
+  "description": "ENJ social platform - monorepo (apps/api, apps/web)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "build": "cd apps/api && npm install && npx prisma generate && npm run build",
-    "start": "node apps/api/dist/server.js"
+    "build": "npm install --include=dev && npm run build --workspace=api",
+    "release": "npm run db:migrate --workspace=api",
+    "start": "npm run start --workspace=api",
+    "dev": "npm run dev --workspace=api",
+    "dev:web": "npm run dev --workspace=web",
+    "build:web": "npm run build --workspace=web",
+    "dev:down": "docker compose down"
   },
-  "dependencies": {
-    "@prisma/adapter-pg": "^7.10.0",
-    "@prisma/client": "^7.10.0",
-    "better-auth": "^1.7.2",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "multer": "^2.3.0",
-    "pg": "^8.23.0",
-    "uuid": "^14.0.2",
-    "zod": "^4.5.4"
-  },
-  "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/multer": "^2.2.0",
-    "@types/node": "^26.4.0",
-    "@types/pg": "^8.23.1",
-    "@types/uuid": "^10.0.0",
-    "prisma": "^7.10.0",
-    "tsx": "^4.23.12",
-    "typescript": "^7.0.2"
+  "allowScripts": {
+    "prisma": true,
+    "@prisma/engines": true,
+    "esbuild": true
   }
 }

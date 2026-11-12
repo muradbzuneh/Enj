@@ -16,7 +16,15 @@ import { messageRouter } from "./routes/message.routes.js";
 import { exploreRouter } from "./routes/explore.routes.js";
 import { bookmarkRouter } from "./routes/bookmark.routes.js";
 import path from "path";
+import fs from "fs";
 export const app = express();
+
+/**
+ * Uploads live in <api-root>/uploads. The folder is git-ignored, so on Heroku
+ * (ephemeral filesystem) it may not exist yet - create it before serving.
+ */
+export const UPLOAD_DIR = path.resolve(process.cwd(), "uploads");
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 app.use(
   cors({
@@ -26,10 +34,9 @@ app.use(
     credentials: true,
   }),
 );
-
 app.use(express.json({ limit: "1mb" }));
 
-app.use("/uploads", express.static(path.resolve("uploads")));
+app.use("/uploads", express.static(UPLOAD_DIR));
 
 app.get("/api/me", async (req, res) => {
   try {

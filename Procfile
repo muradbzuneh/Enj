@@ -1,2 +1,3 @@
-build: cd apps/api && npm install && npx prisma generate && npm run build
-web: cd apps/api && node dist/server.js
+build: npm run build --workspace=api
+release: npm run release
+web: npm run start --workspace=api
