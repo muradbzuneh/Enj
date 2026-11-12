@@ -49,12 +49,12 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onNavigate }) => {
     const timer = setTimeout(async () => {
       try {
         await ensureApiBaseUrl();
-        const res = await apiClient.get<{ available: boolean }>(
-          '/api/user/username/check',
-          { username: handle },
-        );
+        const res = await apiClient.get<{
+          status: string;
+          data: { available: boolean; username: string };
+        }>('/api/username/check', { username: handle });
         if (!cancelled) {
-          setUsernameStatus(res?.available ? 'available' : 'taken');
+          setUsernameStatus(res?.data?.available ? 'available' : 'taken');
         }
       } catch {
         if (!cancelled) setUsernameStatus('idle');
