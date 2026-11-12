@@ -99,6 +99,12 @@ npm run dev
 
 Frontend runs at `http://localhost:3000`.
 
+> **Same-origin API:** the Vite dev server proxies `/api` and `/uploads` to
+> `http://localhost:4001` (see `apps/web/vite.config.ts`), exactly like Vercel
+> does in production. The frontend therefore always talks to the API on its
+> own origin, which keeps the session cookie first-party. `VITE_API_URL` is
+> optional and only needed if you want to bypass the proxy.
+
 ---
 
 ## Environment Variables
@@ -117,7 +123,7 @@ Frontend runs at `http://localhost:3000`.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VITE_API_URL` | Backend API base URL | `http://localhost:4001` |
+| `VITE_API_URL` | Optional. Direct API base URL. Leave unset to use the same-origin proxy (recommended) | _(unset)_ |
 
 ---
 
