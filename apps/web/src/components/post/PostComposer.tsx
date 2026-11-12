@@ -13,7 +13,7 @@ import { useToast } from '../../context/ToastContext';
 import { api } from '../../services/api';
 import { uploadFile } from '../../lib/upload';
 import { resolveMediaUrl } from '../../lib/resolveMediaUrl';
-import { API_BASE_URL } from '../../lib/api/client';
+import { API_BASE_URL, ensureApiBaseUrl } from '../../lib/api/client';
 import type { Post } from '../../types';
 
 export interface PostComposerProps {
@@ -68,6 +68,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
 
   const fetchHashtagSuggestions = useCallback(async (query: string) => {
     try {
+      await ensureApiBaseUrl();
       const res = await fetch(
         `${API_BASE_URL}/api/explore/hashtags?limit=8`
       );

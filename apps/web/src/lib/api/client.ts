@@ -13,13 +13,13 @@ export let API_BASE_URL: string = (
 
 /**
  * The configured VITE_API_URL can go stale (an old deployment that was deleted
- * or renamed). Probe it once at boot and fall back to the known production API
- * if it does not answer, so a stale env var can never brick the app.
+ * or renamed). Probe it once and fall back to the known production API if it
+ * does not answer, so a stale env var can never brick the app.
  *
  * `API_BASE_URL` is exported as a live binding, so every module that imports it
  * picks up the corrected value.
  */
-export async function resolveApiBaseUrl(): Promise<string> {
+async function probeApiBaseUrl(): Promise<string> {
   if (API_BASE_URL === DEFAULT_API_URL) return API_BASE_URL;
 
   try {
@@ -32,7 +32,7 @@ export async function resolveApiBaseUrl(): Promise<string> {
     clearTimeout(timeout);
     if (res.ok) return API_BASE_URL;
   } catch {
-    // fall through to the default
+    // unreachable or blocked - fall through to the default
   }
 
   console.warn(
@@ -40,6 +40,17 @@ export async function resolveApiBaseUrl(): Promise<string> {
   );
   API_BASE_URL = DEFAULT_API_URL;
   return API_BASE_URL;
+}
+
+/**
+ * Every request must wait for the probe to finish, otherwise requests fired in
+ * parallel with the probe (feed, stories, ...) would still use the stale host.
+ */
+let resolution: Promise<string> | null = null;
+
+export function ensureApiBaseUrl(): Promise<string> {
+  if (!resolution) resolution = probeApiBaseUrl();
+  return resolution;
 }
 
 type Query = Record<string, string | number | boolean | undefined | null>;
@@ -83,6 +94,9 @@ function extractMessage(payload: unknown): string | undefined {
 
 async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
   const hasBody = options.body !== undefined;
+
+  // Never hit the network before the API base URL is known to be reachable.
+  await ensureApiBaseUrl();
 
   let response: Response;
   try {
