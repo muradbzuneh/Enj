@@ -10,6 +10,8 @@ import {
   ChevronDown,
   Video,
   Play,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { Avatar } from '../../components/ui/Avatar';
 import { VideoPlayer } from '../../components/post/VideoPlayer';
@@ -43,6 +45,7 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ onProfileClick, onCommentC
   const [likeAnimating, setLikeAnimating] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [doubleTapLike, setDoubleTapLike] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef(0);
   const lastTap = useRef(0);
@@ -191,6 +194,15 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ onProfileClick, onCommentC
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, posts.length]);
 
+  /** Sound toggle - short video platforms always let you unmute. */
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = containerRef.current?.querySelector('video');
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto py-2">
@@ -285,6 +297,19 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ onProfileClick, onCommentC
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
             <Heart className="w-20 h-20 fill-white text-white drop-shadow-2xl animate-ping" />
           </div>
+        )}
+
+        {/* Sound toggle */}
+        {video && (
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="absolute top-3 right-3 z-20 grid place-items-center w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm text-white/90 hover:text-white transition-colors cursor-pointer"
+            aria-label={isMuted ? 'Unmute' : 'Mute'}
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
         )}
 
         {/* Right side actions */}

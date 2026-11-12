@@ -73,12 +73,27 @@ export async function getPosts(req: Request, res: Response) {
       });
     }
 
-    const { page, limit } = parsed.data;
+    const { page, limit, author } = parsed.data;
 
     const skip = (page - 1) * limit;
 
+    // Resolve the author filter (id or username) into a user id.
+    let authorId: string | undefined;
+    if (author) {
+      const target = await prisma.user.findFirst({
+        where: {
+          OR: [{ id: author }, { username: author.toLowerCase() }],
+        },
+        select: { id: true },
+      });
+      authorId = target?.id;
+    }
+
+    const where = authorId ? { authorId } : {};
+
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
+        where,
         skip,
         take: limit,
 
@@ -112,7 +127,9 @@ export async function getPosts(req: Request, res: Response) {
         },
       }),
 
-      prisma.post.count(),
+      prisma.post.count({
+        where,
+      }),
     ]);
 
     const data = await attachFollowState(

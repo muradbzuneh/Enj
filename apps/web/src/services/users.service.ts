@@ -92,18 +92,21 @@ export const usersService = {
   ): Promise<Paginated<Post>> {
     const page = opts?.page ?? 1;
     const limit = opts?.limit ?? 20;
-    const profile = await this.getProfile(identifier);
-    const res = await apiClient.get<{ data: BackendPost[]; pagination: { total: number; hasNextPage: boolean } }>(
-      "/api/posts",
-      { page, limit },
-    );
-    const allPosts = Array.isArray(res.data) ? res.data.map(normalizePost) : [];
-    const authored = allPosts.filter(
-      (p) => p.authorId === profile.id || p.author.username.toLowerCase() === identifier.toLowerCase(),
-    );
+    // The API filters by author server-side - filtering the whole feed in the
+    // browser silently dropped every post outside the first page.
+    const res = await apiClient.get<{
+      data: BackendPost[];
+      pagination: { total: number; hasNextPage: boolean };
+    }>("/api/posts", { page, limit, author: identifier });
+    const posts = Array.isArray(res.data) ? res.data.map(normalizePost) : [];
     return {
-      items: authored,
-      pagination: { page, limit, hasMore: res.pagination?.hasNextPage ?? false, total: res.pagination?.total },
+      items: posts,
+      pagination: {
+        page,
+        limit,
+        hasMore: res.pagination?.hasNextPage ?? false,
+        total: res.pagination?.total,
+      },
     };
   },
 

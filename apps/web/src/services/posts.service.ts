@@ -50,10 +50,27 @@ function extractPagination(res: unknown) {
 }
 
 export const postsService = {
-  async getPosts(page = 1, limit = 20): Promise<{ posts: Post[]; items: Post[]; pagination: ReturnType<typeof extractPagination> }> {
-    const res = await apiClient.get("/api/posts", { page, limit });
+  /**
+   * @param page   page number
+   * @param limit  page size
+   * @param author restrict to one author (user id or username)
+   */
+  async getPosts(
+    pageOrOpts: number | { page?: number; limit?: number; author?: string },
+    limit = 20,
+  ): Promise<{ posts: Post[]; items: Post[]; pagination: ReturnType<typeof extractPagination> }> {
+    const page = typeof pageOrOpts === "number" ? pageOrOpts : (pageOrOpts.page ?? 1);
+    const effectiveLimit =
+      typeof pageOrOpts === "number" ? limit : (pageOrOpts.limit ?? 20);
+    const author = typeof pageOrOpts === "number" ? undefined : pageOrOpts.author;
+
+    const res = await apiClient.get("/api/posts", {
+      page,
+      limit: effectiveLimit,
+      ...(author ? { author } : {}),
+    });
     const posts = extractPosts(res);
-    const pagination = extractPagination(res);
+    const pagination = extractPagination(res, page, effectiveLimit);
     return { posts, items: posts, pagination };
   },
 
