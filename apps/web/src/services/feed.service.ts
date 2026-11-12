@@ -49,14 +49,29 @@ function extractPagination(res: unknown, fallbackPage: number, fallbackLimit: nu
   return { page, limit, hasMore: hasNext, total };
 }
 
+export type FeedFilter = "all" | "following";
+
 export const feedService = {
+  /**
+   * `filter="all"` returns every post on the platform ("For You" tab).
+   * `filter="following"` returns only posts from people the user follows.
+   */
   async getPersonalized(
-    pageOrOpts: number | { page?: number; limit?: number },
+    pageOrOpts:
+      | number
+      | { page?: number; limit?: number; filter?: FeedFilter },
     limit?: number,
+    filter: FeedFilter = "all",
   ): Promise<{ posts: Post[]; items: Post[]; pagination: ReturnType<typeof extractPagination> }> {
     const page = typeof pageOrOpts === "number" ? pageOrOpts : (pageOrOpts.page ?? 1);
     const effectiveLimit = typeof pageOrOpts === "number" ? (limit ?? 20) : (pageOrOpts.limit ?? 20);
-    const res = await apiClient.get("/api/feed", { page, limit: effectiveLimit });
+    const effectiveFilter =
+      typeof pageOrOpts === "number" ? filter : (pageOrOpts.filter ?? filter);
+    const res = await apiClient.get("/api/feed", {
+      page,
+      limit: effectiveLimit,
+      filter: effectiveFilter,
+    });
     const posts = extractPosts(res);
     const pagination = extractPagination(res, page, effectiveLimit);
     return { posts, items: posts, pagination };

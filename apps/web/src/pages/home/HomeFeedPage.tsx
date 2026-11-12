@@ -40,8 +40,8 @@ export const HomeFeedPage: React.FC<HomeFeedPageProps> = ({
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
-  const [followingUsernames, setFollowingUsernames] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'for-you' | 'following'>('for-you');
+  const feedFilter = activeTab === 'following' ? 'following' : 'all';
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,31 +63,20 @@ export const HomeFeedPage: React.FC<HomeFeedPageProps> = ({
     try {
       const page = 1;
       const [feedResponse, loadedStories] = await Promise.all([
-        api.feed.getPersonalized(page, 20),
+        api.feed.getPersonalized({ page, limit: 20, filter: feedFilter }),
         api.stories.getStories(),
       ]);
       setPosts(feedResponse.posts);
       setStories(loadedStories);
       hasMoreRef.current = feedResponse.pagination.hasMore;
       pageRef.current = 1;
-
-      // Load following users if logged in
-      if (user?.id) {
-        try {
-          const followList = await api.users.getFollowing(user.id);
-          const usernames = new Set(followList.map((u) => u.username.toLowerCase()));
-          setFollowingUsernames(usernames);
-        } catch {
-          // Non-blocking fallback
-        }
-      }
     } catch (err: any) {
       setError(err?.message || 'Unable to load feed. Please try again.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [user?.id]);
+  }, [user?.id, feedFilter]);
 
   useEffect(() => {
     fetchFeedAndStories();
@@ -98,7 +87,7 @@ export const HomeFeedPage: React.FC<HomeFeedPageProps> = ({
     setIsLoadingMore(true);
     try {
       const nextPage = pageRef.current + 1;
-      const res = await api.feed.getPersonalized(nextPage, 20);
+      const res = await api.feed.getPersonalized({ page: nextPage, limit: 20, filter: feedFilter });
       setPosts((prev) => [...prev, ...res.posts]);
       hasMoreRef.current = res.pagination.hasMore;
       pageRef.current = nextPage;
@@ -107,7 +96,7 @@ export const HomeFeedPage: React.FC<HomeFeedPageProps> = ({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore]);
+  }, [isLoadingMore, feedFilter]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -151,16 +140,9 @@ export const HomeFeedPage: React.FC<HomeFeedPageProps> = ({
     setStories((prev) => prev.filter((s) => s.id !== storyId));
   };
 
-  // Filter posts based on active tab
-  const displayedPosts = activeTab === 'for-you'
-    ? posts
-    : posts.filter((p) => {
-        if (!user) return true;
-        const authorUsername = p.author.username?.toLowerCase();
-        if (!authorUsername) return false;
-        const isSelf = p.authorId === user.id || (user.username && authorUsername === user.username.toLowerCase());
-        return isSelf || followingUsernames.has(authorUsername);
-      });
+  // The backend already scopes the response to the active tab:
+  // "for-you" returns every post, "following" only the followed creators.
+  const displayedPosts = posts;
 
   return (
     <div className="space-y-5">
