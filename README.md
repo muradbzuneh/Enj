@@ -150,7 +150,26 @@ heroku addons:create heroku-postgresql:essential-0   # or use Neon/Supabase
 | `BETTER_AUTH_URL` | `https://<app>.herokuapp.com` | Must be the public API URL |
 | `FRONTEND_URL` | `http://localhost:3000,https://<frontend>` | Comma separated list of trusted origins |
 
-**3. Deploy**
+**3. Durable media storage (recommended)**
+
+Heroku's filesystem is ephemeral - uploaded images and videos are wiped on
+every dyno restart. The API stores media in an S3 compatible bucket as soon as
+these config vars are set (works with AWS S3, Cloudflare R2, Supabase Storage,
+Backblaze B2 and MinIO):
+
+| Variable | Notes |
+|----------|-------|
+| `S3_BUCKET` | Bucket name (required to enable remote storage) |
+| `S3_REGION` | Defaults to `auto` (correct for R2) |
+| `S3_ENDPOINT` | Required for R2 / MinIO / Supabase, omit for AWS |
+| `S3_ACCESS_KEY_ID` | |
+| `S3_SECRET_ACCESS_KEY` | |
+| `S3_PUBLIC_URL` | Public base URL the files are served from (CDN or public bucket) |
+
+Without them the API falls back to the local `uploads/` folder, which is fine
+for development but loses media on every restart.
+
+**4. Deploy**
 
 ```bash
 git push heroku main

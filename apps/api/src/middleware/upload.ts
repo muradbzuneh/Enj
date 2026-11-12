@@ -2,19 +2,26 @@ import multer from "multer";
 import { v4 as uuid } from "uuid";
 import path from "path";
 import fs from "fs";
+import { isRemoteStorageEnabled } from "../lib/storage.js";
 
-const UPLOAD_DIR = path.resolve("uploads");
+const UPLOAD_DIR = path.resolve(process.cwd(), "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || ".bin";
-    cb(null, `${uuid()}${ext}`);
-  },
-});
+/**
+ * When an S3 compatible bucket is configured the file is kept in memory and
+ * uploaded to the bucket, because Heroku's local disk is ephemeral.
+ */
+const storage = isRemoteStorageEnabled
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+      filename: (_req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase() || ".bin";
+        cb(null, `${uuid()}${ext}`);
+      },
+    });
 
 const fileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
   const allowed = /^(image\/(jpeg|png|gif|webp|heic|heif)|video\/(mp4|webm|ogg|quicktime|x-msvideo|avi|mov|mkv|x-matroska))$/i;

@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Heart, MessageCircle, Share2, Bookmark, RefreshCw, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { Avatar } from '../../components/ui/Avatar';
 import { VideoPlayer } from '../../components/post/VideoPlayer';
+import { MediaImage } from '../../components/post/MediaImage';
 import { ShareDialog } from '../../components/post/ShareDialog';
 import { useAuth } from '../../context/AuthContext';
 import { resolveMediaUrl } from '../../lib/resolveMediaUrl';
@@ -219,11 +220,10 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ onProfileClick, onCommentC
           /\.(mp4|webm|ogg|mov|avi|mkv|quicktime)$/i.test(currentPost.mediaUrl) || currentPost.mediaUrl.includes('video') ? (
             <VideoPlayer src={resolveMediaUrl(currentPost.mediaUrl)} className="w-full h-full" autoPlay muted />
           ) : (
-            <img
+            <MediaImage
               src={resolveMediaUrl(currentPost.mediaUrl)}
               alt={currentPost.content}
               className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
             />
           )
         ) : (

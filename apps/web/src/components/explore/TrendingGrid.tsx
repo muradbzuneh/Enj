@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Heart, Loader2, RefreshCw } from 'lucide-react';
 import { api } from '../../services/api';
 import { resolveMediaUrl } from '../../lib/resolveMediaUrl';
+import { MediaImage } from '../post/MediaImage';
 import type { Post } from '../../types';
 
 export interface TrendingGridProps {
@@ -59,11 +60,10 @@ export const TrendingGrid: React.FC<TrendingGridProps> = ({ onPostClick }) => {
             className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 dark:bg-[#22272e] group cursor-pointer"
           >
             {post.mediaUrl ? (
-              <img
+              <MediaImage
                 src={resolveMediaUrl(post.mediaUrl)}
                 alt=""
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                referrerPolicy="no-referrer"
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[#FF3366] via-[#FF5E7E] to-[#FFAA00] flex items-center justify-center p-3">
