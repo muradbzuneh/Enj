@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "npm install --include=dev && npm run build --workspace=api",
-    "release": "npm run db:migrate --workspace=api",
+    "release": "npm run db:release --workspace=api",
     "start": "npm run start --workspace=api",
     "dev": "npm run dev --workspace=api",
     "dev:web": "npm run dev --workspace=web",

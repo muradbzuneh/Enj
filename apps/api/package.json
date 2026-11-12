@@ -10,6 +10,7 @@
     "start": "node dist/server.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
+    "db:release": "node scripts/release.mjs",
     "db:studio": "prisma studio"
   },
   "keywords": [],
