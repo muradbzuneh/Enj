@@ -122,19 +122,50 @@ Frontend runs at `http://localhost:3000`.
 
 ## Deployment
 
-### Railway (Backend)
+### Heroku (Backend)
 
-1. Create a new Railway project and link your GitHub repo
-2. Set the service root to `apps/api`
-3. Add a **PostgreSQL** plugin (or use Neon/Supabase)
-4. Set environment variables:
-   ```
-   DATABASE_URL=           # from Railway PostgreSQL plugin
-   FRONTEND_URL=           # https://your-app.vercel.app
-   BETTER_AUTH_URL=        # https://your-api.up.railway.app
-   BETTER_AUTH_SECRET=     # generate a random string
-   ```
-5. Railway auto-detects the Dockerfile and deploys
+The repo root acts as the Heroku app root. A `Procfile` defines the three
+lifecycle phases and the root `package.json` delegates to the `api` workspace.
+
+```txt
+# Procfile
+build: npm run build --workspace=api
+release: npm run release
+web: npm run start --workspace=api
+```
+
+**1. Create the app and attach a database**
+
+```bash
+heroku create enj
+heroku addons:create heroku-postgresql:essential-0   # or use Neon/Supabase
+```
+
+**2. Set the config vars** (Settings -> Reveal Config Vars, or `heroku config:set`)
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `DATABASE_URL` | your Postgres connection string | Required |
+| `BETTER_AUTH_SECRET` | a long random string | `openssl rand -base64 48` |
+| `BETTER_AUTH_URL` | `https://<app>.herokuapp.com` | Must be the public API URL |
+| `FRONTEND_URL` | `http://localhost:3000,https://<frontend>` | Comma separated list of trusted origins |
+
+**3. Deploy**
+
+```bash
+git push heroku main
+```
+
+Migrations are applied automatically in the release phase
+(`apps/api/scripts/release.mjs`, which retries on pooler advisory-lock
+timeouts). Verify with:
+
+```bash
+curl https://<app>.herokuapp.com/api/health
+```
+
+> **Note:** Heroku's filesystem is ephemeral. Uploaded media is lost on every
+> dyno restart - add S3/Cloudinary for durable uploads.
 
 ### Vercel (Frontend)
 
@@ -142,9 +173,10 @@ Frontend runs at `http://localhost:3000`.
 2. Set the root directory to `apps/web`
 3. Add environment variable:
    ```
-   VITE_API_URL = https://your-api.up.railway.app
+   VITE_API_URL = https://<app>.herokuapp.com
    ```
-4. Deploy. Copy the Vercel URL and set it as `FRONTEND_URL` in Railway.
+4. Deploy, then add the Vercel URL to the backend's `FRONTEND_URL` config var
+   so BetterAuth trusts the origin.
 
 ---
 
