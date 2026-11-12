@@ -20,6 +20,9 @@ const trustedOrigins = Array.from(
   ),
 );
 
+const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:4001";
+const isSecure = baseURL.startsWith("https://");
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -44,6 +47,19 @@ export const auth = betterAuth({
   },
 
   trustedOrigins,
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:4001",
+  baseURL,
   secret: process.env.BETTER_AUTH_SECRET || "fallback-secret-change-me",
+
+  advanced: {
+    useSecureCookies: isSecure,
+    /**
+     * The frontend and the API are served from different sites
+     * (vercel.app vs herokuapp.com), so the browser only sends the session
+     * cookie on cross-site fetches when it is SameSite=None.
+     * `Secure` is mandatory for SameSite=None.
+     */
+    defaultCookieAttributes: isSecure
+      ? { sameSite: "none", secure: true, httpOnly: true, path: "/" }
+      : { sameSite: "lax", httpOnly: true, path: "/" },
+  },
 });
