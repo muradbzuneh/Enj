@@ -1,25 +1,39 @@
 import { ApiRequestError, messageForStatus } from "./errors";
 
 /**
- * Base URL of the existing Express backend.
- * Configure with VITE_API_URL (see .env.example). Never hardcode a host.
- * `||` (not `??`) so an empty VITE_API_URL still falls back to the default.
+ * Base URL of the Express backend.
+ *
+ * In production the API is proxied through the same origin (see vercel.json),
+ * so every request is first-party: no CORS preflight, no cross-site cookie
+ * rules and a stale VITE_API_URL can never break the app.
+ *
+ * Locally we talk to the API directly, which is still same-site because
+ * localhost:3000 and localhost:4001 share the same registrable domain.
  */
+const isLocalDev =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+const configuredUrl = import.meta.env["VITE_API_URL"]?.trim();
+
 export const DEFAULT_API_URL = "https://enj-fd0ec6a0ffca.herokuapp.com";
 
-export let API_BASE_URL: string = (
-  import.meta.env["VITE_API_URL"] || DEFAULT_API_URL
-).replace(/\/$/, "");
+/**
+ * Same-origin everywhere. `VITE_API_URL` is only honoured when it is set
+ * explicitly for local development - in production the API is proxied through
+ * the app's own origin (vercel.json / vite.config.ts).
+ */
+export let API_BASE_URL: string = isLocalDev && configuredUrl
+  ? configuredUrl.replace(/\/$/, "")
+  : "";
 
 /**
- * The configured VITE_API_URL can go stale (an old deployment that was deleted
- * or renamed). Probe it once and fall back to the known production API if it
- * does not answer, so a stale env var can never brick the app.
- *
- * `API_BASE_URL` is exported as a live binding, so every module that imports it
- * picks up the corrected value.
+ * Probe the configured host and fall back to the known production API if it
+ * does not answer. Only relevant when the API is called cross-origin - the
+ * same-origin proxy can never be stale.
  */
 async function probeApiBaseUrl(): Promise<string> {
+  if (!API_BASE_URL) return API_BASE_URL;
   if (API_BASE_URL === DEFAULT_API_URL) return API_BASE_URL;
 
   try {
@@ -63,7 +77,10 @@ interface RequestOptions {
 }
 
 function buildUrl(path: string, query?: Query): string {
-  const url = new URL(`${API_BASE_URL}${path}`);
+  // Same-origin (production proxy) or absolute (local dev).
+  const url = API_BASE_URL
+    ? new URL(`${API_BASE_URL}${path}`)
+    : new URL(path, window.location.origin);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value === undefined || value === null || value === "") continue;

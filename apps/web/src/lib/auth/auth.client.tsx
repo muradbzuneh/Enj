@@ -1,7 +1,12 @@
 import { createAuthClient } from "better-auth/react";
 
-// `||` (not `??`) so an empty VITE_API_URL still falls back to the default.
+// The API is proxied through the same origin in production, so the auth client
+// must talk to the page origin as well (not to an absolute API host).
+const baseURL =
+  typeof window !== "undefined" && window.location.origin
+    ? window.location.origin
+    : "http://localhost:4001";
+
 export const authClient = createAuthClient({
-  baseURL:
-    import.meta.env["VITE_API_URL"] || "https://enj-fd0ec6a0ffca.herokuapp.com",
+  baseURL,
 });
