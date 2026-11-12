@@ -12,6 +12,7 @@ interface BackendPost {
   _count?: { comments: number; likes: number };
   isLiked?: boolean;
   isBookmarked?: boolean;
+  isFollowingAuthor?: boolean;
 }
 
 function normalizePost(data: BackendPost): Post {
@@ -27,6 +28,7 @@ function normalizePost(data: BackendPost): Post {
     commentsCount: data._count?.comments ?? 0,
     isLiked: data.isLiked ?? false,
     isBookmarked: data.isBookmarked ?? false,
+    isFollowingAuthor: data.isFollowingAuthor ?? false,
   };
 }
 
@@ -50,16 +52,18 @@ function extractPagination(res: unknown, fallbackPage: number, fallbackLimit: nu
 }
 
 export type FeedFilter = "all" | "following";
+export type FeedMedia = "all" | "only";
 
 export const feedService = {
   /**
    * `filter="all"` returns every post on the platform ("For You" tab).
    * `filter="following"` returns only posts from people the user follows.
+   * `media="only"` restricts the result to posts that carry an image/video.
    */
   async getPersonalized(
     pageOrOpts:
       | number
-      | { page?: number; limit?: number; filter?: FeedFilter },
+      | { page?: number; limit?: number; filter?: FeedFilter; media?: FeedMedia },
     limit?: number,
     filter: FeedFilter = "all",
   ): Promise<{ posts: Post[]; items: Post[]; pagination: ReturnType<typeof extractPagination> }> {
@@ -67,10 +71,13 @@ export const feedService = {
     const effectiveLimit = typeof pageOrOpts === "number" ? (limit ?? 20) : (pageOrOpts.limit ?? 20);
     const effectiveFilter =
       typeof pageOrOpts === "number" ? filter : (pageOrOpts.filter ?? filter);
+    const effectiveMedia =
+      typeof pageOrOpts === "number" ? "all" : (pageOrOpts.media ?? "all");
     const res = await apiClient.get("/api/feed", {
       page,
       limit: effectiveLimit,
       filter: effectiveFilter,
+      media: effectiveMedia,
     });
     const posts = extractPosts(res);
     const pagination = extractPagination(res, page, effectiveLimit);

@@ -15,6 +15,8 @@ export interface FollowButtonProps {
   initialIsFollowing?: boolean;
   onFollowChange?: (isFollowing: boolean) => void;
   size?: 'sm' | 'md';
+  /** `compact` renders a small pill without icons - used inside post headers. */
+  variant?: 'default' | 'compact';
 }
 
 export const FollowButton: React.FC<FollowButtonProps> = ({
@@ -22,6 +24,7 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
   initialIsFollowing = false,
   onFollowChange,
   size = 'sm',
+  variant = 'default',
 }) => {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -63,6 +66,23 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
       setIsLoading(false);
     }
   };
+
+  if (variant === 'compact') {
+    return (
+      <button
+        type="button"
+        onClick={handleToggle}
+        disabled={isLoading}
+        className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+          isFollowing
+            ? 'text-slate-600 dark:text-zinc-300 border border-slate-300 dark:border-[#3a4150] hover:border-rose-400 hover:text-rose-500'
+            : 'text-white bg-[#FF3366] hover:bg-[#EE2055]'
+        } ${isLoading ? 'opacity-60 cursor-wait' : ''}`}
+      >
+        {isFollowing ? 'Following' : 'Follow'}
+      </button>
+    );
+  }
 
   return (
     <Button

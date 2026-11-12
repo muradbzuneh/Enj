@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { prisma } from "../lib/prisma.js";
+import { attachFollowState } from "../lib/follow-state.js";
 import { extractAndSaveHashtags, removeHashtags } from "../lib/hashtags.js";
 import {
   feedQuerySchema,
@@ -114,13 +115,16 @@ export async function getPosts(req: Request, res: Response) {
       prisma.post.count(),
     ]);
 
-    const data = posts.map((p) => ({
-      ...p,
-      isLiked: currentUser ? (p as any).likes?.length > 0 : false,
-      isBookmarked: currentUser ? (p as any).bookmarks?.length > 0 : false,
-      likes: undefined,
-      bookmarks: undefined,
-    }));
+    const data = await attachFollowState(
+      posts.map((p) => ({
+        ...p,
+        isLiked: currentUser ? (p as any).likes?.length > 0 : false,
+        isBookmarked: currentUser ? (p as any).bookmarks?.length > 0 : false,
+        likes: undefined,
+        bookmarks: undefined,
+      })),
+      currentUser?.id,
+    );
 
     const totalPages = Math.ceil(total / limit);
 

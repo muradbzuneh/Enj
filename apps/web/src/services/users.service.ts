@@ -123,14 +123,18 @@ export const usersService = {
   },
 
   async getSuggestions(): Promise<FollowUserItem[]> {
-    const res = await apiClient.get<{ data: BackendProfile[] }>("/api/suggestions");
+    const res = await apiClient.get<{
+      data: (BackendProfile & { followerCount?: number; postCount?: number })[];
+    }>("/api/suggestions");
     return (res.data || []).map((u) => ({
       id: u.id,
       username: u.username,
       name: u.name,
       image: u.image ?? null,
       bio: u.bio ?? null,
-      isFollowing: false,
+      isFollowing: u.isFollowing ?? false,
+      followerCount: u.followerCount ?? 0,
+      postCount: u.postCount ?? 0,
     }));
   },
 };

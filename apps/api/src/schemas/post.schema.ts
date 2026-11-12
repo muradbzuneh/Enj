@@ -35,6 +35,11 @@ export const feedQuerySchema = z.object({
    * "following"-> only posts by the people the user follows (plus their own)
    */
   filter: z.enum(["all", "following"]).default("all"),
+  /**
+   * "all"  -> posts with and without media
+   * "only" -> only posts that have an image or video attached (used by Reels)
+   */
+  media: z.enum(["all", "only"]).default("all"),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;

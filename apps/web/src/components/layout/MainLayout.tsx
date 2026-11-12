@@ -46,6 +46,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   const [internalComposeOpen, setInternalComposeOpen] = useState(false);
   const isComposeModalOpen = isComposeOpen !== undefined ? isComposeOpen : internalComposeOpen;
 
+  // Explore is a media-first surface - it gets the full width and drops the
+  // right rail, exactly like the real Explore pages.
+  const isWideLayout =
+    currentPath.startsWith('/explore') || currentPath.startsWith('/reels');
+
   const handleOpenCompose = () => {
     if (onOpenCompose) {
       onOpenCompose();
@@ -88,25 +93,31 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             onOpenCompose={handleOpenCompose}
           />
 
-          {/* Central Content Area */}
-          <main className="flex-1 max-w-2xl min-w-0 pb-20 md:pb-8">
+          {/* Central Content Area - Explore needs a wider canvas for the media grid */}
+          <main
+            className={`flex-1 min-w-0 pb-20 md:pb-8 ${
+              isWideLayout ? 'max-w-5xl' : 'max-w-2xl'
+            }`}
+          >
             {children}
           </main>
 
-          {/* Right Sidebar */}
-          <RightSidebar
-            onProfileClick={(username) => {
-              if (username) {
-                onNavigate(`/profile/${username}`);
-              } else {
-                onNavigate('/settings/profile');
-              }
-            }}
-            onTopicClick={(topic) => {
-              if (onSearchChange) onSearchChange(`#${topic}`);
-              onNavigate('/search');
-            }}
-          />
+          {/* Right Sidebar - hidden on wide layouts so the grid can breathe */}
+          {!isWideLayout && (
+            <RightSidebar
+              onProfileClick={(username) => {
+                if (username) {
+                  onNavigate(`/profile/${username}`);
+                } else {
+                  onNavigate('/settings/profile');
+                }
+              }}
+              onTopicClick={(topic) => {
+                if (onSearchChange) onSearchChange(`#${topic}`);
+                onNavigate('/search');
+              }}
+            />
+          )}
         </div>
       </div>
 
