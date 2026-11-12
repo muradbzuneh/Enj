@@ -3,9 +3,10 @@ import { ApiRequestError, messageForStatus } from "./errors";
 /**
  * Base URL of the existing Express backend.
  * Configure with VITE_API_URL (see .env.example). Never hardcode a host.
+ * `||` (not `??`) so an empty VITE_API_URL still falls back to the default.
  */
 export const API_BASE_URL: string = (
-  import.meta.env["VITE_API_URL"] ?? "http://localhost:4001"
+  import.meta.env["VITE_API_URL"] || "https://enj-fd0ec6a0ffca.herokuapp.com"
 ).replace(/\/$/, "");
 
 type Query = Record<string, string | number | boolean | undefined | null>;

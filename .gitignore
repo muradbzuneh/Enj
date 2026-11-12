@@ -18,6 +18,8 @@ todos.json
 
 # Dependencies
 node_modules/
+FEATURE_PROMPTS.md
+
 
 # Build output
 dist/

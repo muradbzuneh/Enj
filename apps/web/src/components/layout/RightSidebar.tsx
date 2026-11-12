@@ -57,6 +57,29 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
 
   return (
     <aside className="w-80 shrink-0 sticky top-20 flex flex-col gap-4 h-[calc(100vh-6rem)] pb-4 hidden lg:flex overflow-y-auto pr-1">
+      {/* Persistence & Reset Card */}
+      <div className="bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-3.5 shadow-xs transition-colors">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Server className="w-3.5 h-3.5 text-[#FF3366]" />
+            <span className="text-xs font-bold text-slate-900 dark:text-[#f3f4f6]">Status</span>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
+            <Radio className="w-2.5 h-2.5 animate-pulse" />
+            LIVE & PERSISTENT
+          </span>
+
+          <button
+            type="button"
+            onClick={handleResetData}
+            disabled={isResetting}
+            className="text-[11px] font-medium text-slate-500 hover:text-[#FF4966] dark:text-zinc-400 dark:hover:text-[#FF3366]  cursor-pointer transition-colors"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
       {/* Suggested Follows */}
       {suggestions.length > 0 && (
         <div className="bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-4 shadow-xs transition-colors">
@@ -97,7 +120,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
       )}
 
       {/* Trending Topics */}
-      <div className="bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-4 shadow-xs transition-colors">
+      {/*<div className="bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-4 shadow-xs transition-colors">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="w-4 h-4 text-[#FF3366]" />
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
@@ -122,34 +145,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
             </div>
           ))}
         </div>
-      </div>
+      </div>*/}
 
-      {/* Persistence & Reset Card */}
-      <div className="bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-3.5 shadow-xs transition-colors">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Server className="w-3.5 h-3.5 text-[#FF3366]" />
-            <span className="text-xs font-bold text-slate-900 dark:text-[#f3f4f6]">Status</span>
-          </div>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
-            <Radio className="w-2.5 h-2.5 animate-pulse" />
-            LIVE & PERSISTENT
-          </span>
-        </div>
 
-        <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-[#262a32] flex items-center justify-between">
-          <span className="text-[11px] text-slate-400 dark:text-zinc-500">Reset demo data:</span>
-          <button
-            type="button"
-            onClick={handleResetData}
-            disabled={isResetting}
-            className="text-[11px] font-medium text-slate-500 hover:text-[#FF3366] dark:text-zinc-400 dark:hover:text-[#FF3366] flex items-center gap-1 cursor-pointer transition-colors"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Reset posts & stories</span>
-          </button>
-        </div>
-      </div>
     </aside>
   );
 };

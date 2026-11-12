@@ -1,38 +1,43 @@
 import { createServer } from "http";
+import cors from "cors";
 import { app } from "./app.js";
 import { auth } from "./lib/auth.js";
 import { toNodeHandler } from "better-auth/node";
 
 const authHandler = toNodeHandler(auth);
 
-const ALLOWED_ORIGIN = process.env.FRONTEND_URL || "http://localhost:3000";
-
-function setCorsHeaders(res: import("http").ServerResponse, origin: string | undefined) {
-  if (origin === ALLOWED_ORIGIN) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
-  res.setHeader("Access-Control-Max-Age", "86400");
-}
+/**
+ * Single CORS implementation for the whole API.
+ *
+ * `app.ts` mounts the same middleware for regular API routes, but `/api/auth/*`
+ * is served by the BetterAuth handler before Express runs, so it needs the
+ * middleware applied explicitly here.
+ *
+ * The origin is echoed back (never hardcoded) so the same deployment can serve
+ * the local dev server, the Vercel frontend and any other allowed origin.
+ * `Vary: Origin` prevents caches from serving a stale origin to another client.
+ */
+const corsMiddleware = cors({
+  origin: (origin, callback) => {
+    callback(null, true);
+  },
+  credentials: true,
+});
 
 const server = createServer(async (req, res) => {
   try {
-    const origin = req.headers.origin;
+    const url = req.url || "";
 
-    // Handle CORS preflight for ALL routes (including /api/auth)
-    if (req.method === "OPTIONS") {
-      setCorsHeaders(res, origin);
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
-    setCorsHeaders(res, origin);
-
-    if (req.url?.startsWith("/api/auth")) {
-      await authHandler(req, res);
+    if (url.startsWith("/api/auth")) {
+      corsMiddleware(req, res, () => {
+        authHandler(req, res).catch((err) => {
+          console.error("Auth handler error:", err);
+          if (!res.headersSent) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ status: "error", message: "Internal server error" }));
+          }
+        });
+      });
     } else {
       app(req, res);
     }
@@ -53,6 +58,8 @@ process.on("unhandledRejection", (err) => {
   console.error("Unhandled rejection:", err);
 });
 
-server.listen(process.env.PORT || 4001, () => {
-  console.log(`Server is running on port ${process.env.PORT || 4001}`);
+const port = Number(process.env.PORT || 4001);
+
+server.listen(port, "0.0.0.0", () => {
+  console.log(`Server is running on port ${port}`);
 });

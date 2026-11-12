@@ -2,42 +2,45 @@
   "name": "api",
   "version": "1.0.0",
   "type": "module",
-  "description": "",
-  "main": "index.js",
+  "description": "ENJ social platform API",
+  "main": "dist/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate deploy",
+    "db:release": "node scripts/release.mjs",
     "db:studio": "prisma studio"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-     "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
-    "@types/multer": "^2.2.0",
-    "@types/uuid": "^10.0.0",
     "better-auth": "^1.7.2",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "multer": "^2.3.0",
     "pg": "^8.23.0",
+    "prisma": "^7.10.0",
     "uuid": "^14.0.2",
-    "watch": "^1.0.2",
     "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
     "@types/node": "^26.4.0",
     "@types/pg": "^8.23.1",
-    "prisma": "^7.10.0",
+    "@types/uuid": "^10.0.0",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2"
+  },
+  "allowScripts": {
+    "prisma": true,
+    "@prisma/engines": true
   }
 }

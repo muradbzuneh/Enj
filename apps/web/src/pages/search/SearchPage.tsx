@@ -93,28 +93,11 @@ export const SearchPage: React.FC<SearchPageProps> = ({
             id="search-page-input"
             type="search"
             autoFocus
-            placeholder="Search keywords, hashtags, or @usernames..."
+            placeholder="Search..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full text-sm rounded-xl border border-slate-200 dark:border-[#2d333b] bg-slate-50 dark:bg-[#121418] pl-10 pr-4 py-2.5 text-slate-900 dark:text-[#f3f4f6] placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:bg-white dark:focus:bg-[#16181d] focus:ring-2 focus:ring-[#FF3366]/30 focus:border-[#FF3366] transition-all"
           />
-        </div>
-
-        {/* Quick Tag Pills */}
-        <div className="flex items-center gap-1.5 flex-wrap pt-1">
-          <span className="text-[11px] text-slate-500 dark:text-zinc-500 font-semibold mr-1 flex items-center gap-1">
-            <Hash className="w-3 h-3 text-[#FF3366]" /> Popular:
-          </span>
-          {POPULAR_TAGS.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => setQuery(tag)}
-              className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#121418] dark:hover:bg-[#22272e] border border-slate-200 dark:border-[#2d333b] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-[#f3f4f6] transition-colors cursor-pointer"
-            >
-              {tag}
-            </button>
-          ))}
         </div>
       </div>
 

@@ -65,7 +65,7 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
 
   const handleFileUpload = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      showToast('Please upload a valid image file (PNG, JPG, WebP)', 'error');
+      showToast('Please upload a valid image file (media)', 'error');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {

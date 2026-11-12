@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Hash, Loader2 } from 'lucide-react';
+import { Hash, Loader2, TrendingUp } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
 
 interface HashtagItem {
@@ -39,24 +39,43 @@ export const HashtagCloud: React.FC<HashtagCloudProps> = ({ onHashtagClick }) =>
 
   if (hashtags.length === 0) return null;
 
+  const maxCount = Math.max(...hashtags.map((h) => h.count));
+
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-3">
       <div className="flex items-center gap-1.5 px-1">
-        <Hash className="w-3.5 h-3.5 text-[#FFAA00]" />
+        <TrendingUp className="w-3.5 h-3.5 text-[#FF3366]" />
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-          Popular Hashtags
+          Trending Now
         </h3>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {hashtags.map((h) => (
+      <div className="space-y-1">
+        {hashtags.slice(0, 8).map((h, i) => (
           <button
             key={h.tag}
             type="button"
             onClick={() => onHashtagClick(h.tag)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-[#22272e] dark:hover:bg-[#2d333b] border border-slate-200/80 dark:border-[#2d333b] transition-colors cursor-pointer"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-[#22272e] transition-colors cursor-pointer group text-left"
           >
-            <span className="text-xs font-bold text-[#FF3366]">{h.tag}</span>
-            <span className="text-[10px] text-slate-400 dark:text-zinc-500">{h.count}</span>
+            <span className="text-xs font-bold text-slate-300 dark:text-zinc-600 w-5 shrink-0">
+              {i + 1}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-[#FF3366] group-hover:underline">
+                #{h.tag}
+              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex-1 h-1 rounded-full bg-slate-100 dark:bg-[#2d333b] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#FF3366] to-[#FFAA00] transition-all"
+                    style={{ width: `${(h.count / maxCount) * 100}%` }}
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500 shrink-0">
+                  {h.count} {h.count === 1 ? 'post' : 'posts'}
+                </span>
+              </div>
+            </div>
           </button>
         ))}
       </div>

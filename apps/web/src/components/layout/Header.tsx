@@ -65,7 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Search className="absolute left-3.5 w-4 h-4 text-slate-400 dark:text-zinc-500 pointer-events-none" />
             <input
               type="search"
-              placeholder="Search posts, #tags, or @usernames..."
+              placeholder="Search posts..."
               value={searchQuery}
               onChange={(e) => onSearchChange?.(e.target.value)}
               onKeyDown={handleSearchKeyDown}

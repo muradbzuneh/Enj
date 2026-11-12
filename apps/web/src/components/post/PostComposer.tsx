@@ -1,12 +1,11 @@
 /**
  * Post Composer component for ENJ.
  * Allows authenticated users to author and publish posts with text,
- * attached photos (file upload, drag-and-drop, or preset images), and quick emojis.
- * Adaptive styling for both Default White (Light) mode and Dark mode.
+ * attached photos (file upload, drag-and-drop), and hashtag suggestions.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Image, X, UploadCloud, Hash, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Send, Image, X, UploadCloud, Loader2 } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +13,7 @@ import { useToast } from '../../context/ToastContext';
 import { api } from '../../services/api';
 import { uploadFile } from '../../lib/upload';
 import { resolveMediaUrl } from '../../lib/resolveMediaUrl';
+import { API_BASE_URL } from '../../lib/api/client';
 import type { Post } from '../../types';
 
 export interface PostComposerProps {
@@ -24,14 +24,10 @@ export interface PostComposerProps {
 
 const MAX_CHAR_LIMIT = 280;
 
-const QUICK_TAGS = ['GoldenHour', 'MorningCoffee', 'Ceramics', 'SoundDesign', 'LifeUpdate'];
-
-const PHOTO_PRESETS = [
-  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800&auto=format&fit=crop&q=80',
-];
+interface HashtagSuggestion {
+  tag: string;
+  count: number;
+}
 
 export const PostComposer: React.FC<PostComposerProps> = ({
   onPostCreated,
@@ -41,20 +37,82 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const { user } = useAuth();
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [content, setContent] = useState(initialContent);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
-
-  useEffect(() => {
-    if (initialContent) {
-      setContent(initialContent);
-    }
-  }, [initialContent]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [hashtagSuggestions, setHashtagSuggestions] = useState<HashtagSuggestion[]>([]);
+  const [showHashtagDropdown, setShowHashtagDropdown] = useState(false);
+  const [hashtagQuery, setHashtagQuery] = useState('');
+  const hashtagDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (initialContent) setContent(initialContent);
+  }, [initialContent]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (hashtagDropdownRef.current && !hashtagDropdownRef.current.contains(e.target as Node)) {
+        setShowHashtagDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchHashtagSuggestions = useCallback(async (query: string) => {
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/explore/hashtags?limit=8`
+      );
+      const data = await res.json();
+      const all = data.data || [];
+      if (query) {
+        const filtered = all.filter((h: HashtagSuggestion) =>
+          h.tag.toLowerCase().includes(query.toLowerCase())
+        );
+        setHashtagSuggestions(filtered.slice(0, 6));
+      } else {
+        setHashtagSuggestions(all.slice(0, 6));
+      }
+    } catch {
+      setHashtagSuggestions([]);
+    }
+  }, []);
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setContent(val);
+    if (error) setError(null);
+
+    const cursorPos = e.target.selectionStart;
+    const textBeforeCursor = val.slice(0, cursorPos);
+    const hashtagMatch = textBeforeCursor.match(/#([\w\u0590-\u05FF]*)$/);
+
+    if (hashtagMatch) {
+      setHashtagQuery(hashtagMatch[1]);
+      setShowHashtagDropdown(true);
+      fetchHashtagSuggestions(hashtagMatch[1]);
+    } else {
+      setShowHashtagDropdown(false);
+    }
+  };
+
+  const insertHashtag = (tag: string) => {
+    const cursorPos = textareaRef.current?.selectionStart || content.length;
+    const textBeforeCursor = content.slice(0, cursorPos);
+    const textAfterCursor = content.slice(cursorPos);
+    const replaced = textBeforeCursor.replace(/#[\w\u0590-\u05FF]*$/, `#${tag} `);
+    setContent(replaced + textAfterCursor);
+    setShowHashtagDropdown(false);
+    textareaRef.current?.focus();
+  };
 
   if (!user) {
     return (
@@ -73,17 +131,14 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
       showToast('Please select an image or video file', 'error');
       return;
     }
-
     if (file.size > 10 * 1024 * 1024) {
       showToast('File must be under 10MB', 'error');
       return;
     }
-
     setIsUploading(true);
     try {
       const { url } = await uploadFile(file);
@@ -102,12 +157,10 @@ export const PostComposer: React.FC<PostComposerProps> = ({
     setIsDraggingFile(false);
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
       showToast('Please drop an image or video file', 'error');
       return;
     }
-
     setIsUploading(true);
     try {
       const { url } = await uploadFile(file);
@@ -121,17 +174,11 @@ export const PostComposer: React.FC<PostComposerProps> = ({
     }
   };
 
-  const insertTag = (tag: string) => {
-    setContent((prev) => (prev ? `${prev} #${tag}` : `#${tag}`));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isEmpty || isOverLimit || isSubmitting) return;
-
     setIsSubmitting(true);
     setError(null);
-
     try {
       const createdPost = await api.posts.create(content.trim(), mediaUrl);
       setContent('');
@@ -150,10 +197,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
 
   return (
     <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsDraggingFile(true);
-      }}
+      onDragOver={(e) => { e.preventDefault(); setIsDraggingFile(true); }}
       onDragLeave={() => setIsDraggingFile(false)}
       onDrop={handleDrop}
       className={`bg-white dark:bg-[#1a1d23] border ${
@@ -173,19 +217,44 @@ export const PostComposer: React.FC<PostComposerProps> = ({
         <div className="flex gap-3.5">
           <Avatar src={user.image} name={user.name || user.username} size="md" />
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 relative">
             <textarea
+              ref={textareaRef}
               id="post-composer-textarea"
               rows={3}
               value={content}
-              onChange={(e) => {
-                setContent(e.target.value);
-                if (error) setError(null);
-              }}
+              onChange={handleContentChange}
               placeholder={placeholder}
               className="w-full text-sm text-slate-900 dark:text-[#f3f4f6] placeholder:text-slate-400 dark:placeholder:text-zinc-500 bg-transparent border-none outline-none resize-none leading-relaxed p-0 focus:ring-0"
               disabled={isSubmitting}
             />
+
+            {/* Hashtag suggestion dropdown */}
+            {showHashtagDropdown && hashtagSuggestions.length > 0 && (
+              <div
+                ref={hashtagDropdownRef}
+                className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-xl shadow-lg z-30 py-1 max-h-48 overflow-y-auto"
+              >
+                <p className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500">
+                  Suggested hashtags
+                </p>
+                {hashtagSuggestions.map((tag) => (
+                  <button
+                    key={tag.tag}
+                    type="button"
+                    onClick={() => insertHashtag(tag.tag)}
+                    className="w-full px-3 py-2 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-[#22272e] transition-colors cursor-pointer text-left"
+                  >
+                    <span className="text-sm font-medium text-[#FF3366]">
+                      {tag.tag}
+                    </span>
+                    <span className="text-[11px] text-slate-400 dark:text-zinc-500">
+                      {tag.count} posts
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Attached media preview */}
             {mediaUrl && (
@@ -211,9 +280,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
             {showMediaPicker && (
               <div className="mt-2.5 p-3 bg-slate-50 dark:bg-[#22272e] rounded-xl border border-slate-200/80 dark:border-[#2d333b] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                    Attach a photo
-                  </span>
+                  <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300">Attach a photo</span>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
@@ -222,49 +289,11 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                     Upload from device
                   </button>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {PHOTO_PRESETS.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => {
-                        setMediaUrl(preset);
-                        setShowMediaPicker(false);
-                      }}
-                      className="aspect-video rounded-lg overflow-hidden border border-slate-200/80 dark:border-[#383f4a] hover:opacity-90 hover:scale-[1.02] transition-transform cursor-pointer"
-                    >
-                      <img
-                        src={preset}
-                        alt="Preset preview"
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
 
-            {/* Quick topic tags */}
-            <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 shrink-0 flex items-center gap-0.5">
-                <Hash className="w-2.5 h-2.5" /> Tags:
-              </span>
-              {QUICK_TAGS.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => insertTag(tag)}
-                  className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-slate-200/80 dark:bg-[#22272e] dark:hover:bg-[#2d333b] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-[#f3f4f6] transition-colors whitespace-nowrap cursor-pointer"
-                >
-                  #{tag}
-                </button>
-              ))}
-            </div>
-
             {error && <p className="text-xs text-rose-500 font-medium mt-2">{error}</p>}
 
-            {/* Hidden file input */}
             <input
               ref={fileInputRef}
               type="file"
@@ -274,7 +303,6 @@ export const PostComposer: React.FC<PostComposerProps> = ({
             />
 
             <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#262a32] flex items-center justify-between">
-              {/* Creator tools buttons */}
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -288,14 +316,13 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                   title="Attach image or video"
                 >
                   {isUploading ? (
-                    <span className="w-4 h-4 border-2 border-[#FF3366] border-t-transparent rounded-full animate-spin block" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Image className="w-4 h-4" />
+                    <Image className="w-8 h-6" />
                   )}
                 </button>
               </div>
 
-              {/* Character limit and submit */}
               <div className="flex items-center gap-3">
                 <span
                   className={`text-xs ${

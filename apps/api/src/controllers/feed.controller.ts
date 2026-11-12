@@ -18,21 +18,40 @@ export async function getPersonalizedFeed(
       });
     }
 
-    const { page, limit } = parsed.data;
+    const { page, limit, filter } = parsed.data;
     const skip = (page - 1) * limit;
 
+    /**
+     * "For You" (filter=all) always returns every post on the platform so a
+     * brand new account immediately sees the existing community content.
+     *
+     * "Following" (filter=following) is restricted to the people the user
+     * follows plus their own posts.
+     */
     let authorIds: string[] | undefined = undefined;
 
-    if (currentUser) {
+    if (filter === "following") {
+      if (!currentUser) {
+        return res.json({
+          status: "success",
+          data: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPreviousPage: false,
+          },
+        });
+      }
+
       const following = await prisma.follow.findMany({
         where: { followerId: currentUser.id },
         select: { followingId: true },
       });
 
-      const hasFollowing = following.length > 0;
-      if (hasFollowing) {
-        authorIds = [currentUser.id, ...following.map((f) => f.followingId)];
-      }
+      authorIds = [currentUser.id, ...following.map((f) => f.followingId)];
     }
 
     const [posts, total] = await Promise.all([

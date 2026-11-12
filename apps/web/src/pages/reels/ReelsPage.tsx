@@ -186,7 +186,7 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ onProfileClick, onCommentC
         <div className="aspect-[9/16] w-full max-h-[75vh] rounded-3xl bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] flex flex-col items-center justify-center p-8 text-center">
           <AlertCircle className="w-8 h-8 text-slate-400 mb-3" />
           <p className="text-sm font-medium text-slate-900 dark:text-[#f3f4f6]">No posts to show</p>
-          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">Create a post with an image to see it here</p>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">Create a post with an meadia to see it here</p>
           <button onClick={() => fetchPosts()} className="mt-4 text-xs text-[#FF3366] font-medium hover:underline cursor-pointer">
             Retry
           </button>
@@ -203,9 +203,6 @@ export const ReelsPage: React.FC<ReelsPageProps> = ({ onProfileClick, onCommentC
           <div className="w-2 h-2 rounded-full bg-[#FF3366]" />
           <h1 className="text-base font-bold tracking-tight text-slate-900 dark:text-[#f3f4f6]">Reels</h1>
         </div>
-        <span className="text-xs text-slate-400 dark:text-zinc-500 font-medium">
-          {currentIndex + 1} / {posts.length}
-        </span>
       </div>
 
       {/* Reel Viewer */}

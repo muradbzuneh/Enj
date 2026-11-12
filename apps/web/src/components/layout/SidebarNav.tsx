@@ -40,7 +40,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
 
   return (
     <>
-    <aside className="w-60 shrink-0 sticky top-20 flex flex-col justify-between h-[calc(100vh-6rem)] pb-4 hidden md:flex">
+    <aside className="w-60 shrink-0 sticky top-20 flex flex-col justify-between h-[calc(100vh-60rem)] pb-10 hidden md:flex">
       <div className="space-y-4">
         {/* Navigation list */}
         <nav className="space-y-1">

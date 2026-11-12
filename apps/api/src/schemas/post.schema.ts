@@ -30,6 +30,11 @@ export const postIdSchema = z.object({
 export const feedQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(50).default(10),
+  /**
+   * "all"      -> every post on the platform ("For You")
+   * "following"-> only posts by the people the user follows (plus their own)
+   */
+  filter: z.enum(["all", "following"]).default("all"),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;
