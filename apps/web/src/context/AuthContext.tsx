@@ -6,6 +6,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api } from '../services/api';
+import { resolveApiBaseUrl } from '../lib/api/client';
 import type { User } from '../types';
 
 interface AuthContextType {
@@ -32,6 +33,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     setError(null);
     try {
+      // Make sure we are talking to a reachable API before asking for the session.
+      await resolveApiBaseUrl();
       const currentUser = await api.auth.getCurrentUser();
       setUser(currentUser);
     } catch (err: any) {

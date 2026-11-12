@@ -5,9 +5,42 @@ import { ApiRequestError, messageForStatus } from "./errors";
  * Configure with VITE_API_URL (see .env.example). Never hardcode a host.
  * `||` (not `??`) so an empty VITE_API_URL still falls back to the default.
  */
-export const API_BASE_URL: string = (
-  import.meta.env["VITE_API_URL"] || "https://enj-fd0ec6a0ffca.herokuapp.com"
+export const DEFAULT_API_URL = "https://enj-fd0ec6a0ffca.herokuapp.com";
+
+export let API_BASE_URL: string = (
+  import.meta.env["VITE_API_URL"] || DEFAULT_API_URL
 ).replace(/\/$/, "");
+
+/**
+ * The configured VITE_API_URL can go stale (an old deployment that was deleted
+ * or renamed). Probe it once at boot and fall back to the known production API
+ * if it does not answer, so a stale env var can never brick the app.
+ *
+ * `API_BASE_URL` is exported as a live binding, so every module that imports it
+ * picks up the corrected value.
+ */
+export async function resolveApiBaseUrl(): Promise<string> {
+  if (API_BASE_URL === DEFAULT_API_URL) return API_BASE_URL;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(`${API_BASE_URL}/api/health`, {
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    clearTimeout(timeout);
+    if (res.ok) return API_BASE_URL;
+  } catch {
+    // fall through to the default
+  }
+
+  console.warn(
+    `[api] ${API_BASE_URL} is unreachable - falling back to ${DEFAULT_API_URL}`,
+  );
+  API_BASE_URL = DEFAULT_API_URL;
+  return API_BASE_URL;
+}
 
 type Query = Record<string, string | number | boolean | undefined | null>;
 
