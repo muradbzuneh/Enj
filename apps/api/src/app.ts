@@ -15,6 +15,7 @@ import { uploadRouter } from "./routes/upload.routes.js";
 import { messageRouter } from "./routes/message.routes.js";
 import { exploreRouter } from "./routes/explore.routes.js";
 import { bookmarkRouter } from "./routes/bookmark.routes.js";
+import { presenceRouter } from "./routes/presence.routes.js";
 import path from "path";
 import fs from "fs";
 export const app = express();
@@ -87,6 +88,7 @@ app.use("/api", uploadRouter);
 app.use("/api", messageRouter);
 app.use("/api", exploreRouter);
 app.use("/api", bookmarkRouter);
+app.use("/api", presenceRouter);
 
 app.get("/api/health/db", async (_req, res) => {
   try {

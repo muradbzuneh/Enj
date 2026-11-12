@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
+import { createAndEmitNotification } from "../lib/socket.js";
 
 export async function followUser(req: Request, res: Response) {
   try {
@@ -57,14 +58,12 @@ export async function followUser(req: Request, res: Response) {
 
     if (currentUser.id !== userId) {
       const actorName = currentUser.name || currentUser.username || "Someone";
-      await prisma.notification.create({
-        data: {
-          type: "follow",
-          message: `${actorName} started following you`,
-          actorId: currentUser.id,
-          userId,
-        },
-      }).catch(() => {});
+      await createAndEmitNotification({
+        type: "follow",
+        message: `${actorName} started following you`,
+        actorId: currentUser.id,
+        userId,
+      });
     }
 
     return res.status(201).json({
