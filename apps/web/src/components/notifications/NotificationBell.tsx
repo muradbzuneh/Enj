@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { api } from '../../services/api';
 import type { NotificationItem } from '../../services/notifications.service';
 
@@ -11,6 +12,7 @@ export interface NotificationBellProps {
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }) => {
   const { user } = useAuth();
+  const { lastNotification } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -41,6 +43,19 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
     const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
   }, [user]);
+
+  /**
+   * Live notifications: the bell badge grows the moment something happens and
+   * the new entry is pushed into the open dropdown.
+   */
+  useEffect(() => {
+    if (!lastNotification) return;
+
+    setUnreadCount((prev) => prev + 1);
+    setNotifications((prev) =>
+      prev.some((n) => n.id === lastNotification.id) ? prev : [lastNotification, ...prev],
+    );
+  }, [lastNotification]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

@@ -19,7 +19,7 @@ export const authService = {
   },
 
   async signIn(email: string, password: string): Promise<User> {
-    const res = await apiClient.post<{ user: User }>("/api/auth/sign-in/email", {
+    const res = await apiClient.post<{ user: User; token?: string }>("/api/auth/sign-in/email", {
       email,
       password,
     });

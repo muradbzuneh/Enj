@@ -73,10 +73,19 @@ app.use("/api", profileRouter);
 app.use("/api/feed", feedRouter);
 app.use("/api", likeRouter);
 
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     app: "Enj API",
+    /**
+     * Where the browser should open the websocket. The frontend and the API
+     * are served from different origins and a websocket upgrade cannot be
+     * proxied through Vercel, so the client connects to this URL directly.
+     */
+    socketUrl:
+      process.env.SOCKET_PUBLIC_URL ||
+      process.env.BETTER_AUTH_URL ||
+      `${req.protocol}://${req.get("host")}`,
   });
 });
 

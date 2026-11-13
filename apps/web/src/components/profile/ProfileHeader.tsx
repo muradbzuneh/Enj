@@ -9,6 +9,7 @@ import { Calendar, Edit3, MessageSquare } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { FollowButton } from './FollowButton';
+import { PresenceDot } from '../presence/PresenceDot';
 import { formatJoinedDate } from '../../lib/utils/date';
 import type { Profile } from '../../types';
 
@@ -97,6 +98,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-500">
           <Calendar className="w-3.5 h-3.5" />
           <span>Joined {formatJoinedDate(profile.createdAt)}</span>
+        </div>
+      )}
+
+      {/* Live presence - shows who is available to chat right now */}
+      {!profile.isOwnProfile && (
+        <div className="mt-2">
+          <PresenceDot userId={profile.id} variant="label" lastSeenAt={profile.lastSeenAt} />
         </div>
       )}
 

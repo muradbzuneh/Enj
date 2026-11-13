@@ -10,6 +10,7 @@ import { Sparkles, TrendingUp, Radio, Server, ArrowUpRight, RotateCcw } from 'lu
 import { Avatar } from '../ui/Avatar';
 import { FollowButton } from '../profile/FollowButton';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { useToast } from '../../context/ToastContext';
 import { api } from '../../services/api';
 import type { FollowUserItem } from '../../types';
@@ -25,6 +26,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
 }) => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { isConnected } = useSocket();
   const [suggestions, setSuggestions] = useState<FollowUserItem[]>([]);
   const [isResetting, setIsResetting] = useState(false);
 
@@ -64,9 +66,16 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
             <Server className="w-3.5 h-3.5 text-[#FF3366]" />
             <span className="text-xs font-bold text-slate-900 dark:text-[#f3f4f6]">Status</span>
           </div>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
-            <Radio className="w-2.5 h-2.5 animate-pulse" />
-            LIVE & PERSISTENT
+          <span
+            data-testid="realtime-status"
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide border ${
+              isConnected
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40'
+                : 'bg-slate-100 dark:bg-[#22272e] text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-[#2d333b]'
+            }`}
+          >
+            <Radio className={`w-2.5 h-2.5 ${isConnected ? 'animate-pulse' : ''}`} />
+            {isConnected ? 'LIVE & PERSISTENT' : 'OFFLINE'}
           </span>
 
           <button
@@ -151,3 +160,4 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     </aside>
   );
 };
+

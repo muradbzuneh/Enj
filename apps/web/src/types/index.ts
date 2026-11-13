@@ -27,6 +27,8 @@ export interface Profile {
   isFollowing?: boolean;
   isOwnProfile?: boolean;
   createdAt?: string;
+  /** Last time the user was seen online. */
+  lastSeenAt?: string | null;
 }
 
 export interface PostAuthor {

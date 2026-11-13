@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MessageSquare, Loader2 } from 'lucide-react';
 import { ConversationItem } from '../../components/messages/ConversationItem';
 import { ChatPanel } from '../../components/messages/ChatPanel';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { api } from '../../services/api';
+import { SOCKET_EVENTS } from '../../lib/socket';
 
 interface Conversation {
   id: string;
@@ -19,26 +21,100 @@ export interface MessagesPageProps {
 
 export const MessagesPage: React.FC<MessagesPageProps> = ({ initialConversationId }) => {
   const { user } = useAuth();
+  const { socket, messageVersion } = useSocket();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(initialConversationId || null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const loadConversations = useCallback(async (silent = false) => {
+    if (!user) return;
+    if (!silent) setIsLoading(true);
+    try {
+      const data = await api.messages.getConversations();
+      setConversations(data as Conversation[]);
+    } catch {
+      /* keep the current list */
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
     let mounted = true;
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const data = await api.messages.getConversations();
-        if (mounted) setConversations(data);
-      } catch {} finally {
-        if (mounted) setIsLoading(false);
-      }
+
+    loadConversations();
+
+    // Safety net - the socket updates the list instantly, this keeps it fresh
+    // when the tab was in the background.
+    const interval = setInterval(() => {
+      if (mounted) loadConversations(true);
+    }, 10000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
     };
-    load();
-    const interval = setInterval(load, 10000);
-    return () => { mounted = false; clearInterval(interval); };
-  }, [user]);
+  }, [user, loadConversations]);
+
+  /**
+   * Live conversation list: a new message reorders the list and bumps the
+   * unread badge without a refresh.
+   */
+  useEffect(() => {
+    if (!socket) return;
+
+    const onNewMessage = (message: {
+      conversationId: string;
+      content: string;
+      authorId: string;
+      author: { id: string; name: string };
+      createdAt: string;
+    }) => {
+      setConversations((prev) => {
+        const existing = prev.find((c) => c.id === message.conversationId);
+        if (!existing) {
+          // A conversation we do not know about yet - reload the list.
+          void loadConversations(true);
+          return prev;
+        }
+
+        const isActive = activeId === message.conversationId;
+
+        return prev
+          .map((c) =>
+            c.id === message.conversationId
+              ? {
+                  ...c,
+                  lastMessage: {
+                    content: message.content,
+                    createdAt: message.createdAt,
+                    authorName: message.author?.name ?? '',
+                  },
+                  unreadCount: isActive ? 0 : c.unreadCount + 1,
+                }
+              : c,
+          )
+          .sort((a, b) => {
+            const aTime = a.lastMessage?.createdAt || a.createdAt;
+            const bTime = b.lastMessage?.createdAt || b.createdAt;
+            return new Date(bTime).getTime() - new Date(aTime).getTime();
+          });
+      });
+    };
+
+    socket.on(SOCKET_EVENTS.MESSAGE_NEW, onNewMessage);
+
+    return () => {
+      socket.off(SOCKET_EVENTS.MESSAGE_NEW, onNewMessage);
+    };
+  }, [socket, activeId, loadConversations]);
+
+  // A message arrived somewhere - refresh the list counters.
+  useEffect(() => {
+    if (messageVersion === 0) return;
+    void loadConversations(true);
+  }, [messageVersion, loadConversations]);
 
   useEffect(() => {
     if (initialConversationId) setActiveId(initialConversationId);
