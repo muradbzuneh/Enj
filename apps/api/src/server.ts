@@ -2,6 +2,7 @@ import { createServer } from "http";
 import cors from "cors";
 import { app } from "./app.js";
 import { auth } from "./lib/auth.js";
+import { attachSocketServer } from "./lib/socket.js";
 import { toNodeHandler } from "better-auth/node";
 
 const authHandler = toNodeHandler(auth);
@@ -59,6 +60,10 @@ process.on("unhandledRejection", (err) => {
 });
 
 const port = Number(process.env.PORT || 4001);
+
+// Real-time layer (Socket.IO) - shares the HTTP server so a single port
+// serves both the REST API and the websocket.
+attachSocketServer(server);
 
 server.listen(port, "0.0.0.0", () => {
   console.log(`Server is running on port ${port}`);

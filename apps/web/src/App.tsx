@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import { ToastProvider } from './context/ToastContext';
 import { Preloader } from './components/ui/Preloader';
 import { MainLayout } from './components/layout/MainLayout';
@@ -229,7 +230,9 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-          <RouterApp />
+          <SocketProvider>
+            <RouterApp />
+          </SocketProvider>
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>

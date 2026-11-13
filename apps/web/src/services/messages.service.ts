@@ -22,6 +22,8 @@ interface MessageItem {
   author: ConversationUser;
   read: boolean;
   createdAt: string;
+  deliveredAt?: string | null;
+  readAt?: string | null;
 }
 
 export const messagesService = {

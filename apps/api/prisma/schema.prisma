@@ -26,6 +26,8 @@ model User {
   likes    Like[]
   stories  Story[]
   storyViews StoryView[]
+  /// Last time the user was seen online (drives the "last seen" label).
+  lastSeenAt DateTime?
 
   followers Follow[] @relation("UserFollowers")
   following Follow[] @relation("UserFollowing")
@@ -266,6 +268,10 @@ model Message {
   authorId       String
   author         User         @relation(fields: [authorId], references: [id])
   read           Boolean      @default(false)
+  /// Set once the recipient's client received the message.
+  deliveredAt    DateTime?
+  /// Set once the recipient opened the conversation.
+  readAt         DateTime?
   createdAt      DateTime     @default(now())
   @@index([conversationId, createdAt])
   @@map("message")

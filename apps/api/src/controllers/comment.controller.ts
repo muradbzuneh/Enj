@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { prisma } from "../lib/prisma.js";
+import { createAndEmitNotification } from "../lib/socket.js";
 import {
   commentIdSchema,
   commentQuerySchema,
@@ -57,15 +58,13 @@ export async function createComment(req: Request, res: Response) {
 
     if (user.id !== post.authorId) {
       const actorName = user.name || user.username || "Someone";
-      await prisma.notification.create({
-        data: {
-          type: "comment",
-          message: `${actorName} commented on your post`,
-          actorId: user.id,
-          userId: post.authorId,
-          postId: post.id,
-        },
-      }).catch(() => {});
+      await createAndEmitNotification({
+        type: "comment",
+        message: `${actorName} commented on your post`,
+        actorId: user.id,
+        userId: post.authorId,
+        postId: post.id,
+      });
     }
 
     return res.status(201).json({

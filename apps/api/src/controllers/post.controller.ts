@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { prisma } from "../lib/prisma.js";
 import { attachFollowState } from "../lib/follow-state.js";
+import { emitNewPostToFollowers } from "../lib/socket.js";
 import { extractAndSaveHashtags, removeHashtags } from "../lib/hashtags.js";
 import {
   feedQuerySchema,
@@ -45,6 +46,22 @@ export async function createPost(req: Request, res: Response) {
     if (content) {
       await extractAndSaveHashtags(post.id, content);
     }
+
+    // Live feed update: the followers of the author get a "new post" event
+    // so their feed can show a banner instead of silently changing.
+    await emitNewPostToFollowers({
+      id: post.id,
+      content: post.content,
+      mediaUrl: post.mediaUrl,
+      authorId: post.authorId,
+      createdAt: post.createdAt,
+      author: {
+        id: post.author.id,
+        name: post.author.name,
+        username: post.author.username,
+        image: post.author.image,
+      },
+    });
 
     return res.status(201).json({
       status: "success",

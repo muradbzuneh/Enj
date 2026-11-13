@@ -10,6 +10,7 @@ interface BackendProfile {
   image?: string | null;
   bannerUrl?: string | null;
   createdAt?: string;
+  lastSeenAt?: string | null;
   _count?: { posts: number; followers: number; following: number };
   isFollowing?: boolean;
   isOwnProfile?: boolean;
@@ -29,6 +30,7 @@ function normalizeProfile(data: BackendProfile, extra?: Partial<Profile>): Profi
     isFollowing: data.isFollowing ?? false,
     isOwnProfile: data.isOwnProfile ?? false,
     createdAt: data.createdAt,
+    lastSeenAt: data.lastSeenAt ?? null,
     ...extra,
   };
 }

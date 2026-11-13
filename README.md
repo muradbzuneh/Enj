@@ -25,14 +25,38 @@
 - **Feed** — Personalized "For You" (everything on the platform) and "Following" (people you follow) tabs with infinite scroll
 - **Reels** — TikTok-style vertical feed with real media only, follow button, sound toggle, swipe/keyboard/double-tap navigation
 - **Stories** — 24-hour ephemeral stories with reactions, view counts, and auto-advance
-- **Messaging** — Real-time direct messaging between users
+- **Messaging** — Real-time direct messaging with typing indicators, delivery/read receipts and online presence
 - **Explore** — Media-first trending grid with engagement counters, "Creators to follow", hashtag discovery
 - **Follow & engage** — Follow button next to every author (feed, reels, explore, profile), like, comment, bookmark, share
 - **Profiles** — Media grid of the user's posts, follower/following counts, story highlights
 - **Bookmarks** — Save posts and access them later
-- **Notifications** — Like, comment, and follow alerts
+- **Notifications** — Live badge: likes, comments, follows and messages arrive instantly
+- **Presence** — Who is online right now, last seen, live connection status
+- **Live feed** — Optional "new posts" banner when someone you follow publishes
 - **Dark Mode** — Class-based light/dark/system theme with a header toggle
 - **Responsive** — Works seamlessly on mobile, tablet, and desktop
+
+### Real-time (Socket.IO)
+
+The API and the websocket share a single port (`/socket.io` on the API host).
+
+| Feature | How it works |
+|---------|--------------|
+| Messages | `message:send` / `message:new` - both participants receive them live, in every open tab |
+| Typing indicator | `message:typing` - broadcast to the other participant, expires after 4s |
+| Delivery / read receipts | `message:delivered`, `message:read` - the sender sees sent → delivered → read |
+| Notifications | `notification:new` - the bell badge and a toast update immediately |
+| Presence | `presence:update` - online/offline plus a persisted `lastSeenAt` |
+| Live feed | `post:new` - followers get a "new posts" banner instead of the feed changing silently |
+
+**Authentication:** the socket handshake carries the BetterAuth session token
+(the session cookie is not attached to a cross-origin websocket handshake).
+The websocket URL is discovered at runtime from `GET /api/health`, so it
+always points at the right API host.
+
+> A websocket upgrade cannot be proxied through the Vercel rewrite, so the
+> browser connects to the API host directly. The REST API stays same-origin
+> through the proxy, which keeps the session cookie first-party.
 
 ---
 

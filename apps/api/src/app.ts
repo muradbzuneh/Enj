@@ -15,6 +15,7 @@ import { uploadRouter } from "./routes/upload.routes.js";
 import { messageRouter } from "./routes/message.routes.js";
 import { exploreRouter } from "./routes/explore.routes.js";
 import { bookmarkRouter } from "./routes/bookmark.routes.js";
+import { presenceRouter } from "./routes/presence.routes.js";
 import path from "path";
 import fs from "fs";
 export const app = express();
@@ -72,10 +73,19 @@ app.use("/api", profileRouter);
 app.use("/api/feed", feedRouter);
 app.use("/api", likeRouter);
 
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     app: "Enj API",
+    /**
+     * Where the browser should open the websocket. The frontend and the API
+     * are served from different origins and a websocket upgrade cannot be
+     * proxied through Vercel, so the client connects to this URL directly.
+     */
+    socketUrl:
+      process.env.SOCKET_PUBLIC_URL ||
+      process.env.BETTER_AUTH_URL ||
+      `${req.protocol}://${req.get("host")}`,
   });
 });
 
@@ -87,6 +97,7 @@ app.use("/api", uploadRouter);
 app.use("/api", messageRouter);
 app.use("/api", exploreRouter);
 app.use("/api", bookmarkRouter);
+app.use("/api", presenceRouter);
 
 app.get("/api/health/db", async (_req, res) => {
   try {

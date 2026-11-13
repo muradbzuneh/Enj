@@ -1,5 +1,11 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
+import {
+  SOCKET_EVENTS,
+  emitToConversation,
+  emitToUser,
+  joinConversationRoom,
+} from "../lib/socket.js";
 
 export async function getConversations(req: Request, res: Response) {  try {
     const currentUser = res.locals.session.user;
@@ -58,6 +64,9 @@ export async function getConversations(req: Request, res: Response) {  try {
       return new Date(bTime).getTime() - new Date(aTime).getTime();
     });
 
+    // Join every conversation room so incoming messages arrive live.
+    conversations.forEach((c) => joinConversationRoom(currentUser.id, c.id));
+
     return res.json({ status: "success", data: conversations });
   } catch (error) {
     console.error("GET CONVERSATIONS ERROR:", error);
@@ -100,6 +109,9 @@ export async function getConversation(req: Request, res: Response) {
     if (!participation) {
       return res.status(404).json({ status: "error", message: "Conversation not found" });
     }
+
+    // Open conversation -> live messages for it.
+    joinConversationRoom(currentUser.id, conversationId);
 
     const other = participation.conversation.participants.find(
       (part) => part.userId !== currentUser.id,
@@ -172,6 +184,8 @@ export async function createConversation(req: Request, res: Response) {
     });
 
     if (existing) {
+      joinConversationRoom(currentUser.id, existing.conversationId);
+      joinConversationRoom(participantId, existing.conversationId);
       return res.json({ status: "success", data: { id: existing.conversationId } });
     }
 
@@ -185,6 +199,10 @@ export async function createConversation(req: Request, res: Response) {
         },
       },
     });
+
+    // Both participants listen on the room from now on.
+    joinConversationRoom(currentUser.id, conversation.id);
+    joinConversationRoom(participantId, conversation.id);
 
     return res.status(201).json({ status: "success", data: { id: conversation.id } });
   } catch (error) {
@@ -219,10 +237,26 @@ export async function getMessages(req: Request, res: Response) {
       prisma.message.count({ where: { conversationId } }),
     ]);
 
+    const now = new Date();
     await prisma.message.updateMany({
       where: { conversationId, authorId: { not: currentUser.id }, read: false },
-      data: { read: true },
+      data: { read: true, readAt: now, deliveredAt: now },
     });
+
+    // Live updates for this conversation.
+    joinConversationRoom(currentUser.id, conversationId);
+
+    // Let the sender know the messages were read.
+    const senderIds = await prisma.conversationParticipant.findMany({
+      where: { conversationId, userId: { not: currentUser.id } },
+      select: { userId: true },
+    });
+    senderIds.forEach((s) =>
+      emitToUser(s.userId, SOCKET_EVENTS.MESSAGE_READ, {
+        conversationId,
+        readAt: now.toISOString(),
+      }),
+    );
 
     return res.json({
       status: "success",
@@ -257,9 +291,17 @@ export async function sendMessage(req: Request, res: Response) {
       include: { author: { select: { id: true, name: true, username: true, image: true } } },
     });
 
+    const payloadMessage = {
+      ...message,
+      createdAt: message.createdAt.toISOString(),
+    };
+
+    // Push it to both participants so every open tab is in sync.
+    emitToConversation(conversationId, SOCKET_EVENTS.MESSAGE_NEW, payloadMessage);
+
     return res.status(201).json({
       status: "success",
-      data: { ...message, createdAt: message.createdAt.toISOString() },
+      data: payloadMessage,
     });
   } catch (error) {
     console.error("SEND MESSAGE ERROR:", error);

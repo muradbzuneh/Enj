@@ -6,13 +6,18 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api } from '../services/api';
-import { ensureApiBaseUrl } from '../lib/api/client';
+import { apiClient, ensureApiBaseUrl } from '../lib/api/client';
 import type { User } from '../types';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   error: string | null;
+  /**
+   * The raw BetterAuth session token. The realtime socket needs it because a
+   * websocket handshake from another origin does not carry the session cookie.
+   */
+  sessionToken: string | null;
   signIn: (email: string, pass: string) => Promise<void>;
   signUp: (email: string, pass: string, name: string, username?: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -26,8 +31,29 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Fetches the raw session token.
+   *
+   * The realtime socket authenticates with it, because a websocket handshake
+   * from another origin does not carry the session cookie.
+   */
+  const fetchSessionToken = useCallback(async () => {
+    try {
+      const res = await apiClient.get<{ session?: { token?: string } }>(
+        '/api/auth/get-session',
+      );
+      const token = res?.session?.token ?? null;
+      setSessionToken(token);
+      return token;
+    } catch {
+      setSessionToken(null);
+      return null;
+    }
+  }, []);
 
   const refreshSession = useCallback(async () => {
     setIsLoading(true);
@@ -37,16 +63,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await ensureApiBaseUrl();
       const currentUser = await api.auth.getCurrentUser();
       setUser(currentUser);
+      await fetchSessionToken();
     } catch (err: any) {
       // 401 just means unauthenticated session
       if (err?.status !== 401) {
         console.warn('[AuthContext] Session fetch error:', err);
       }
       setUser(null);
+      setSessionToken(null);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchSessionToken]);
 
   useEffect(() => {
     refreshSession();
@@ -58,6 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const authenticatedUser = await api.auth.signIn(email, pass);
       setUser(authenticatedUser);
+      // The socket needs the token of the session we just created.
+      await fetchSessionToken();
     } catch (err: any) {
       const msg = err?.message || 'Failed to sign in. Please check your credentials.';
       setError(msg);
@@ -73,6 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const newUser = await api.auth.signUp(email, pass, name, username);
       setUser(newUser);
+      // The socket needs the token of the session we just created.
+      await fetchSessionToken();
     } catch (err: any) {
       const msg = err?.message || 'Failed to create account. Please try again.';
       setError(msg);
@@ -87,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.auth.signOut();
       setUser(null);
+      setSessionToken(null);
     } catch (err: any) {
       console.error('[AuthContext] Sign out error:', err);
       // Even if network fails, clear local user session state
@@ -120,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isLoading,
         error,
+        sessionToken,
         signIn,
         signUp,
         signOut,
@@ -141,3 +175,5 @@ export function useAuth() {
   }
   return context;
 }
+
+

@@ -23,6 +23,7 @@ export async function getProfile(req: Request, res: Response) {
         image: true,
         bannerUrl: true,
         createdAt: true,
+        lastSeenAt: true,
         _count: {
           select: { posts: true, followers: true, following: true },
         },

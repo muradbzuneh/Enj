@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { prisma } from "../lib/prisma.js";
+import { createAndEmitNotification } from "../lib/socket.js";
 export async function likePost(req: Request, res: Response) {
   try {
     const user = res.locals.session.user;
@@ -55,15 +56,13 @@ export async function likePost(req: Request, res: Response) {
 
     if (user.id !== post.authorId) {
       const actorName = user.name || user.username || "Someone";
-      await prisma.notification.create({
-        data: {
-          type: "like",
-          message: `${actorName} liked your post`,
-          actorId: user.id,
-          userId: post.authorId,
-          postId,
-        },
-      }).catch(() => {});
+      await createAndEmitNotification({
+        type: "like",
+        message: `${actorName} liked your post`,
+        actorId: user.id,
+        userId: post.authorId,
+        postId,
+      });
     }
 
     return res.status(201).json({

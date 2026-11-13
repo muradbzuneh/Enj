@@ -19,6 +19,7 @@ import { PostCard } from '../../components/post/PostCard';
 import { PostSkeleton } from '../../components/ui/Skeleton';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { api } from '../../services/api';
 import type { Post, Story } from '../../types';
 
@@ -38,6 +39,7 @@ export const HomeFeedPage: React.FC<HomeFeedPageProps> = ({
   onHashtagClick,
 }) => {
   const { user } = useAuth();
+  const { pendingPostCount, consumePendingPosts } = useSocket();
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [activeTab, setActiveTab] = useState<'for-you' | 'following'>('for-you');
@@ -231,6 +233,21 @@ export const HomeFeedPage: React.FC<HomeFeedPageProps> = ({
 
       {/* Feed Content Stream */}
       <div className="space-y-4">
+        {/* Live: new posts from the people you follow arrived while you were here */}
+        {pendingPostCount > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              consumePendingPosts();
+              fetchFeedAndStories(true);
+            }}
+            className="w-full flex items-center justify-center gap-2 rounded-full bg-[#FF3366] text-white text-xs font-bold py-2.5 shadow-xs hover:bg-[#EE2055] active:scale-[0.99] transition-all cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {pendingPostCount} new post{pendingPostCount > 1 ? 's' : ''} - show now
+          </button>
+        )}
+
         {isLoading ? (
           <div className="space-y-4">
             <PostSkeleton />

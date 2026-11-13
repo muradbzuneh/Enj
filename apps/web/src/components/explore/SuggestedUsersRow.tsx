@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { FollowButton } from '../profile/FollowButton';
+import { PresenceDot } from '../presence/PresenceDot';
 import { api } from '../../services/api';
 import type { FollowUserItem } from '../../types';
 
@@ -61,7 +62,13 @@ export const SuggestedUsersRow: React.FC<SuggestedUsersRowProps> = ({ onProfileC
             className="shrink-0 w-52 bg-white dark:bg-[#1a1d23] border border-slate-200/80 dark:border-[#2d333b] rounded-2xl p-4 text-center shadow-xs transition-colors hover:border-slate-300 dark:hover:border-[#3a4150]"
           >
             <div onClick={() => onProfileClick(u.id)} className="cursor-pointer">
-              <Avatar src={u.image} name={u.name} size="lg" className="mx-auto" />
+              <div className="relative w-fit mx-auto">
+                <Avatar src={u.image} name={u.name} size="lg" />
+                <PresenceDot
+                  userId={u.id}
+                  className="absolute bottom-0.5 right-0.5 ring-2 ring-white dark:ring-[#1a1d23]"
+                />
+              </div>
               <p className="text-sm font-bold text-slate-900 dark:text-[#f3f4f6] mt-2 truncate">
                 {u.name}
               </p>

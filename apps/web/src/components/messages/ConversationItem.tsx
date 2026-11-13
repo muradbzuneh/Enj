@@ -1,5 +1,6 @@
 import React from 'react';
 import { Avatar } from '../ui/Avatar';
+import { PresenceDot } from '../presence/PresenceDot';
 
 export interface ConversationItemProps {
   conversation: {
@@ -22,13 +23,21 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({ conversation
     <button
       type="button"
       onClick={onClick}
+      data-conversation-id={conversation.id}
+      aria-label={`Open conversation with ${user?.name || 'user'}`}
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors cursor-pointer ${
         isActive
           ? 'bg-rose-50 dark:bg-rose-950/20'
           : 'hover:bg-slate-50 dark:hover:bg-[#22272e]'
       }`}
     >
-      <Avatar src={user?.image} name={user?.name || '?'} size="md" />
+      <div className="relative shrink-0">
+        <Avatar src={user?.image} name={user?.name || '?'} size="md" />
+        <PresenceDot
+          userId={user?.id ?? ''}
+          className="absolute bottom-0 right-0 ring-2 ring-white dark:ring-[#1a1d23]"
+        />
+      </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-900 dark:text-[#f3f4f6] truncate">
