@@ -24,6 +24,7 @@ import {
   getSocket,
 } from "../lib/socket";
 import { useAuth } from "./AuthContext";
+import { useToast } from "./ToastContext";
 import type { NotificationItem } from "../services/notifications.service";
 
 interface SocketContextType {
@@ -51,6 +52,7 @@ const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, sessionToken } = useAuth();
+  const { showToast } = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
@@ -113,6 +115,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const onNotification = (payload: NotificationItem) => {
       setLastNotification(payload);
       setLiveUnreadCount((c) => c + 1);
+
+      // A short toast so the user notices it even when the bell is off screen.
+      showToast(payload.message, "info");
     };
 
     const onTyping = (payload: { conversationId: string; userId: string; isTyping: boolean }) => {

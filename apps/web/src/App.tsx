@@ -229,11 +229,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <SocketProvider>
-          <ToastProvider>
+        <ToastProvider>
+          <SocketProvider>
             <RouterApp />
-          </ToastProvider>
-        </SocketProvider>
+          </SocketProvider>
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );
